@@ -68,13 +68,21 @@
       letter-spacing: -0.5px;
     }
 
-    .badge {
+    .export-btn {
       font-size: 0.75rem;
       background: var(--input-bg);
-      padding: 4px 8px;
+      padding: 6px 12px;
       border-radius: 12px;
-      color: var(--text-muted);
+      color: var(--text);
       border: 1px solid var(--border);
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.15s ease;
+    }
+
+    .export-btn:hover {
+      border-color: var(--primary);
+      color: var(--primary);
     }
 
     main {
@@ -95,63 +103,51 @@
       color: var(--text-muted);
     }
 
-    /* Location Group Header */
-    .location-group {
+    /* Location & Date Group */
+    .group-container {
       display: flex;
       flex-direction: column;
       gap: 8px;
     }
 
-    .location-header {
+    .group-header {
       display: flex;
       align-items: center;
       gap: 8px;
-      font-size: 0.95rem;
+      font-size: 0.9rem;
       font-weight: 700;
       color: var(--primary);
       padding: 4px 0;
       border-bottom: 1px solid var(--border);
     }
 
-    .location-header svg {
-      width: 16px;
-      height: 16px;
+    .group-header svg {
+      width: 14px;
+      height: 14px;
       fill: currentColor;
     }
 
     .entry-card {
       background: var(--card-bg);
       border-radius: 12px;
-      padding: 14px;
+      padding: 12px 14px;
       border: 1px solid var(--border);
       display: flex;
-      flex-direction: column;
-      gap: 6px;
-      position: relative;
-    }
-
-    .entry-header {
-      display: flex;
       justify-content: space-between;
       align-items: center;
     }
 
-    .entry-date {
-      font-size: 0.75rem;
+    .entry-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .entry-time {
+      font-size: 0.8rem;
       color: var(--text-muted);
-    }
-
-    .entry-details {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-top: 2px;
-    }
-
-    .entry-details-left {
-      display: flex;
-      align-items: center;
-      gap: 10px;
+      font-variant-numeric: tabular-nums;
+      min-width: 42px;
     }
 
     .grade-badge {
@@ -163,15 +159,12 @@
       border: 1px solid var(--border);
     }
 
-    .status-tag {
+    .entry-status-green {
       font-size: 0.8rem;
       font-weight: 600;
       padding: 2px 8px;
       border-radius: 6px;
       text-transform: uppercase;
-    }
-
-    .status-tag.success {
       background: rgba(16, 185, 129, 0.15);
       color: var(--success);
     }
@@ -184,6 +177,12 @@
       text-transform: uppercase;
       background: rgba(239, 68, 68, 0.15);
       color: var(--failure);
+    }
+
+    .entry-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
 
     .edit-btn {
@@ -416,7 +415,7 @@
   <div class="app-container">
     <header>
       <h1>Climbing Log</h1>
-      <span class="badge">Local Storage</span>
+      <button id="exportCsvBtn" class="export-btn">Export CSV</button>
     </header>
 
     <main>
@@ -459,6 +458,13 @@
             </div>
           </div>
 
+          <!-- Success Type Field -->
+          <div class="form-group" id="successGroup">
+            <label for="successInput">Success Type</label>
+            <input type="text" id="successInput" placeholder="e.g. flash, send, repeat" autocomplete="off" />
+            <div id="successChips" class="chips-container"></div>
+          </div>
+
           <!-- Primary Failure Reason Field -->
           <div class="form-group" id="reasonGroup" style="display: none;">
             <label for="reasonInput">Primary Failure Reason</label>
@@ -490,15 +496,18 @@
     const modalTitle = document.getElementById('modalTitle');
     const deleteBtn = document.getElementById('deleteBtn');
     const submitBtn = document.getElementById('submitBtn');
-    const entryIdInput = document.getElementById('entryId');
+    const exportCsvBtn = document.getElementById('exportCsvBtn');
 
     const locationInput = document.getElementById('locationInput');
     const gradeInput = document.getElementById('gradeInput');
+    const successInput = document.getElementById('successInput');
     const reasonInput = document.getElementById('reasonInput');
+    const successGroup = document.getElementById('successGroup');
     const reasonGroup = document.getElementById('reasonGroup');
 
     const locationChips = document.getElementById('locationChips');
     const gradeChips = document.getElementById('gradeChips');
+    const successChips = document.getElementById('successChips');
     const reasonChips = document.getElementById('reasonChips');
 
     const toggleBtns = document.querySelectorAll('.toggle-btn');
@@ -512,34 +521,71 @@
       localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
     }
 
-    function getRecentUniqueValues(fieldKey, filterText = '') {
-      const results = [];
-      const query = filterText.trim().toLowerCase();
+    function exportToCSV() {
+      if (history.length === 0) {
+        alert('No history entries to export.');
+        return;
+      }
 
+      const headers = ['Timestamp', 'Location', 'Grade', 'Outcome', 'Type / Reason'];
+      const rows = history.map(item => [
+        `"${item.timestamp}"`,
+        `"${(item.location || '').replace(/"/g, '""')}"`,
+        `"${(item.grade || '').replace(/"/g, '""')}"`,
+        `"${(item.outcome || '').replace(/"/g, '""')}"`,
+        `"${(item.outcome === 'Success' ? (item.successType || 'send') : (item.reason || '')).replace(/"/g, '""')}"`
+      ]);
+
+      const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `climbing_log_${new Date().toISOString().slice(0, 10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function getAutocompleteValues(fieldKey, filterText = '') {
+      const query = filterText.trim().toLowerCase();
+      const matching = [];
+      const recent = [];
+
+      // Pass 1: Collect unique matching values
       for (let i = history.length - 1; i >= 0; i--) {
-        // Skip current item if editing
         if (editingId && history[i].id === editingId) continue;
-        
         const val = history[i][fieldKey];
         if (val && typeof val === 'string') {
           const trimmed = val.trim();
-          if (trimmed.length > 0) {
-            const matches = query === '' || trimmed.toLowerCase().includes(query);
-            if (matches && !results.includes(trimmed)) {
-              results.push(trimmed);
+          if (trimmed.length > 0 && !matching.includes(trimmed)) {
+            if (query === '' || trimmed.toLowerCase().includes(query)) {
+              matching.push(trimmed);
+            }
+            if (!recent.includes(trimmed)) {
+              recent.push(trimmed);
             }
           }
         }
-        if (results.length === 3) break;
       }
-      return results;
+
+      // Combine: matching first, then backfill with most recent until we have up to 3 unique chips
+      const results = [...matching];
+      for (let i = 0; i < recent.length && results.length < 3; i++) {
+        if (!results.includes(recent[i])) {
+          results.push(recent[i]);
+        }
+      }
+
+      return results.slice(0, 3);
     }
 
     function updateChips(fieldKey, inputElem, containerElem) {
       containerElem.innerHTML = '';
-      const matches = getRecentUniqueValues(fieldKey, inputElem.value);
+      const items = getAutocompleteValues(fieldKey, inputElem.value);
 
-      matches.forEach(text => {
+      items.forEach(text => {
         const chip = document.createElement('span');
         chip.className = 'chip';
         chip.textContent = text;
@@ -551,7 +597,6 @@
       });
     }
 
-    /* Render History grouped by Location */
     function renderHistory() {
       historyList.innerHTML = '';
       if (history.length === 0) {
@@ -565,9 +610,17 @@
 
       reversedHistory.forEach(entry => {
         const loc = entry.location || 'Unknown Location';
-        if (!currentGroup || currentGroup.location !== loc) {
+        const dateObj = new Date(entry.timestamp);
+        const dateStr = dateObj.toLocaleDateString(undefined, {
+          month: 'short', day: 'numeric', year: 'numeric'
+        });
+        const groupKey = `${loc}___${dateStr}`;
+
+        if (!currentGroup || currentGroup.key !== groupKey) {
           currentGroup = {
+            key: groupKey,
             location: loc,
+            date: dateStr,
             entries: []
           };
           groups.push(currentGroup);
@@ -577,13 +630,13 @@
 
       groups.forEach(group => {
         const groupEl = document.createElement('div');
-        groupEl.className = 'location-group';
+        groupEl.className = 'group-container';
 
         const headerEl = document.createElement('div');
-        headerEl.className = 'location-header';
+        headerEl.className = 'group-header';
         headerEl.innerHTML = `
           <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
-          <span>${escapeHtml(group.location)}</span>
+          <span>${escapeHtml(group.location)} &bull; ${group.date}</span>
         `;
         groupEl.appendChild(headerEl);
 
@@ -591,29 +644,28 @@
           const card = document.createElement('div');
           card.className = 'entry-card';
 
-          const dateStr = new Date(entry.timestamp).toLocaleDateString(undefined, {
-            month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+          const timeStr = new Date(entry.timestamp).toLocaleTimeString(undefined, {
+            hour: '2-digit', minute: '2-digit', hour12: false
           });
 
           const isSuccess = entry.outcome === 'Success';
+          const successDisplay = entry.successType || 'send';
+          const failureDisplay = entry.reason || 'failure';
 
           card.innerHTML = `
-            <div class="entry-header">
-              <span class="entry-date">${dateStr}</span>
+            <div class="entry-left">
+              <span class="entry-time">${timeStr}</span>
+              <span class="grade-badge">${escapeHtml(entry.grade)}</span>
               ${isSuccess 
-                ? `<span class="status-tag success">${entry.outcome}</span>` 
-                : `<span class="entry-reason-red">${escapeHtml(entry.reason || 'Failure')}</span>`
+                ? `<span class="entry-status-green">${escapeHtml(successDisplay)}</span>` 
+                : `<span class="entry-reason-red">${escapeHtml(failureDisplay)}</span>`
               }
             </div>
-            <div class="entry-details">
-              <div class="entry-details-left">
-                <span class="grade-badge">${escapeHtml(entry.grade)}</span>
-              </div>
+            <div class="entry-right">
               <button type="button" class="edit-btn" data-id="${entry.id}">Edit</button>
             </div>
           `;
           
-          // Attach edit click listener
           card.querySelector('.edit-btn').addEventListener('click', () => {
             openModalForEdit(entry.id);
           });
@@ -641,11 +693,13 @@
         locationInput.value = lastEntry.location || '';
         gradeInput.value = lastEntry.grade || '';
         selectedOutcome = lastEntry.outcome || 'Success';
+        successInput.value = lastEntry.successType || '';
         reasonInput.value = lastEntry.reason || '';
       } else {
         locationInput.value = '';
         gradeInput.value = '';
         selectedOutcome = 'Success';
+        successInput.value = '';
         reasonInput.value = '';
       }
 
@@ -653,6 +707,7 @@
 
       updateChips('location', locationInput, locationChips);
       updateChips('grade', gradeInput, gradeChips);
+      updateChips('successType', successInput, successChips);
       updateChips('reason', reasonInput, reasonChips);
 
       modalOverlay.classList.add('active');
@@ -670,12 +725,14 @@
       locationInput.value = entry.location || '';
       gradeInput.value = entry.grade || '';
       selectedOutcome = entry.outcome || 'Success';
+      successInput.value = entry.successType || '';
       reasonInput.value = entry.reason || '';
 
       updateOutcomeToggleUI();
 
       updateChips('location', locationInput, locationChips);
       updateChips('grade', gradeInput, gradeChips);
+      updateChips('successType', successInput, successChips);
       updateChips('reason', reasonInput, reasonChips);
 
       modalOverlay.classList.add('active');
@@ -696,8 +753,10 @@
       });
 
       if (selectedOutcome === 'Failure') {
+        successGroup.style.display = 'none';
         reasonGroup.style.display = 'block';
       } else {
+        successGroup.style.display = 'block';
         reasonGroup.style.display = 'none';
       }
     }
@@ -707,6 +766,7 @@
     modalOverlay.addEventListener('click', (e) => {
       if (e.target === modalOverlay) closeModal();
     });
+    exportCsvBtn.addEventListener('click', exportToCSV);
 
     toggleBtns.forEach(btn => {
       btn.addEventListener('click', () => {
@@ -717,6 +777,7 @@
 
     locationInput.addEventListener('input', () => updateChips('location', locationInput, locationChips));
     gradeInput.addEventListener('input', () => updateChips('grade', gradeInput, gradeChips));
+    successInput.addEventListener('input', () => updateChips('successType', successInput, successChips));
     reasonInput.addEventListener('input', () => updateChips('reason', reasonInput, reasonChips));
 
     entryForm.addEventListener('submit', (e) => {
@@ -724,25 +785,26 @@
 
       const locVal = locationInput.value.trim();
       const gradeVal = gradeInput.value.trim();
+      const successVal = selectedOutcome === 'Success' ? successInput.value.trim() : '';
       const reasonVal = selectedOutcome === 'Failure' ? reasonInput.value.trim() : '';
 
       if (editingId) {
-        // Update existing entry
         const index = history.findIndex(item => item.id === editingId);
         if (index !== -1) {
           history[index].location = locVal;
           history[index].grade = gradeVal;
           history[index].outcome = selectedOutcome;
+          history[index].successType = successVal;
           history[index].reason = reasonVal;
         }
       } else {
-        // Create new entry
         const newEntry = {
           id: Date.now(),
           timestamp: new Date().toISOString(),
           location: locVal,
           grade: gradeVal,
           outcome: selectedOutcome,
+          successType: successVal,
           reason: reasonVal
         };
         history.push(newEntry);
