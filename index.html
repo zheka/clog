@@ -164,7 +164,6 @@
       font-weight: 600;
       padding: 2px 8px;
       border-radius: 6px;
-      text-transform: uppercase;
       background: rgba(16, 185, 129, 0.15);
       color: var(--success);
     }
@@ -174,7 +173,6 @@
       font-weight: 600;
       padding: 2px 8px;
       border-radius: 6px;
-      text-transform: uppercase;
       background: rgba(239, 68, 68, 0.15);
       color: var(--failure);
     }
@@ -418,7 +416,7 @@
       <button id="exportCsvBtn" class="export-btn">Export CSV</button>
     </header>
 
-    <main>
+    <main id="mainContent">
       <div id="historyList" class="history-list"></div>
     </main>
 
@@ -489,6 +487,7 @@
     let editingId = null;
 
     const historyList = document.getElementById('historyList');
+    const mainContent = document.getElementById('mainContent');
     const openModalBtn = document.getElementById('openModalBtn');
     const closeModalBtn = document.getElementById('closeModalBtn');
     const modalOverlay = document.getElementById('modalOverlay');
@@ -519,6 +518,19 @@
 
     function saveHistory() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
+    }
+
+    function resolveExistingCasing(fieldKey, typedValue) {
+      const trimmed = typedValue.trim();
+      if (!trimmed) return '';
+
+      for (let i = history.length - 1; i >= 0; i--) {
+        const val = history[i][fieldKey];
+        if (val && typeof val === 'string' && val.trim().toLowerCase() === trimmed.toLowerCase()) {
+          return val.trim();
+        }
+      }
+      return trimmed;
     }
 
     function exportToCSV() {
@@ -553,28 +565,47 @@
       const matching = [];
       const recent = [];
 
-      // Pass 1: Collect unique matching values
+      let defaultList = [];
+      if (fieldKey === 'successType') {
+        defaultList = ['flash', 'send', 'repeat'];
+      }
+
       for (let i = history.length - 1; i >= 0; i--) {
         if (editingId && history[i].id === editingId) continue;
         const val = history[i][fieldKey];
         if (val && typeof val === 'string') {
           const trimmed = val.trim();
-          if (trimmed.length > 0 && !matching.includes(trimmed)) {
-            if (query === '' || trimmed.toLowerCase().includes(query)) {
-              matching.push(trimmed);
-            }
-            if (!recent.includes(trimmed)) {
+          if (trimmed.length > 0) {
+            const exists = recent.some(r => r.toLowerCase() === trimmed.toLowerCase());
+            if (!exists) {
               recent.push(trimmed);
             }
           }
         }
       }
 
-      // Combine: matching first, then backfill with most recent until we have up to 3 unique chips
+      defaultList.forEach(d => {
+        const exists = recent.some(r => r.toLowerCase() === d.toLowerCase());
+        if (!exists) {
+          recent.push(d);
+        }
+      });
+
+      recent.forEach(trimmed => {
+        if (query === '' || trimmed.toLowerCase().includes(query)) {
+          const alreadyMatched = matching.some(m => m.toLowerCase() === trimmed.toLowerCase());
+          if (!alreadyMatched) {
+            matching.push(trimmed);
+          }
+        }
+      });
+
       const results = [...matching];
       for (let i = 0; i < recent.length && results.length < 3; i++) {
-        if (!results.includes(recent[i])) {
-          results.push(recent[i]);
+        const item = recent[i];
+        const alreadyAdded = results.some(r => r.toLowerCase() === item.toLowerCase());
+        if (!alreadyAdded) {
+          results.push(item);
         }
       }
 
@@ -643,6 +674,7 @@
         group.entries.forEach(entry => {
           const card = document.createElement('div');
           card.className = 'entry-card';
+          card.dataset.entryId = entry.id;
 
           const timeStr = new Date(entry.timestamp).toLocaleTimeString(undefined, {
             hour: '2-digit', minute: '2-digit', hour12: false
@@ -693,13 +725,13 @@
         locationInput.value = lastEntry.location || '';
         gradeInput.value = lastEntry.grade || '';
         selectedOutcome = lastEntry.outcome || 'Success';
-        successInput.value = lastEntry.successType || '';
+        successInput.value = lastEntry.successType || 'send';
         reasonInput.value = lastEntry.reason || '';
       } else {
         locationInput.value = '';
         gradeInput.value = '';
         selectedOutcome = 'Success';
-        successInput.value = '';
+        successInput.value = 'send';
         reasonInput.value = '';
       }
 
@@ -725,7 +757,7 @@
       locationInput.value = entry.location || '';
       gradeInput.value = entry.grade || '';
       selectedOutcome = entry.outcome || 'Success';
-      successInput.value = entry.successType || '';
+      successInput.value = entry.successType || 'send';
       reasonInput.value = entry.reason || '';
 
       updateOutcomeToggleUI();
@@ -783,12 +815,15 @@
     entryForm.addEventListener('submit', (e) => {
       e.preventDefault();
 
-      const locVal = locationInput.value.trim();
-      const gradeVal = gradeInput.value.trim();
-      const successVal = selectedOutcome === 'Success' ? successInput.value.trim() : '';
-      const reasonVal = selectedOutcome === 'Failure' ? reasonInput.value.trim() : '';
+      const locVal = resolveExistingCasing('location', locationInput.value);
+      const gradeVal = resolveExistingCasing('grade', gradeInput.value);
+      const successVal = selectedOutcome === 'Success' ? resolveExistingCasing('successType', successInput.value || 'send') : '';
+      const reasonVal = selectedOutcome === 'Failure' ? resolveExistingCasing('reason', reasonInput.value) : '';
 
-      if (editingId) {
+      let targetId = editingId;
+      const isEditing = Boolean(editingId);
+
+      if (isEditing) {
         const index = history.findIndex(item => item.id === editingId);
         if (index !== -1) {
           history[index].location = locVal;
@@ -798,8 +833,9 @@
           history[index].reason = reasonVal;
         }
       } else {
+        targetId = Date.now();
         const newEntry = {
-          id: Date.now(),
+          id: targetId,
           timestamp: new Date().toISOString(),
           location: locVal,
           grade: gradeVal,
@@ -813,11 +849,25 @@
       saveHistory();
       renderHistory();
       closeModal();
+
+      // Ensure proper scroll targeting after DOM update
+      setTimeout(() => {
+        if (isEditing) {
+          const cardElem = document.querySelector(`[data-entry-id="${targetId}"]`);
+          if (cardElem) {
+            const groupContainer = cardElem.closest('.group-container');
+            const targetToScroll = groupContainer ? groupContainer : cardElem;
+            targetToScroll.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        } else {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      }, 50);
     });
 
     deleteBtn.addEventListener('click', () => {
       if (editingId) {
-        history = history.filter(item => item.id !== editingId);
+        history = history.history ? history.filter(item => item.id !== editingId) : history.filter(item => item.id !== editingId);
         saveHistory();
         renderHistory();
         closeModal();
