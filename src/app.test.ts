@@ -12,6 +12,13 @@ const NOW = new Date('2026-11-15T12:00:00Z');
 
 type Raw = Record<string, unknown>;
 
+/** querySelector that fails the test if nothing matches. */
+function q<T extends HTMLElement = HTMLElement>(sel: string, root: ParentNode = document): T {
+  const el = root.querySelector<T>(sel);
+  if (!el) throw new Error(`No element matches ${sel}`);
+  return el;
+}
+
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 const texts = (sel: string) => [...document.querySelectorAll(sel)].map((e) => e.textContent.trim());
 const stored = (): Raw[] => JSON.parse(localStorage.getItem(HISTORY_KEY) ?? '[]');
@@ -106,17 +113,17 @@ describe('loading and history list', () => {
     expect(groups).toHaveLength(3);
     const day = (iso: string) =>
       new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-    expect(groups[0].querySelector('.group-header').textContent).toContain(
+    expect(q('.group-header', groups[0]).textContent).toContain(
       `A • bouldering • ${day('2026-11-15T12:00:00Z')}`,
     );
-    expect(groups[1].querySelector('.group-header').textContent).toContain('B • route');
+    expect(q('.group-header', groups[1]).textContent).toContain('B • route');
     expect([...groups[2].querySelectorAll('.grade-badge')].map((e) => e.textContent)).toEqual([
       'v2',
       'v1',
     ]);
     // only the newest group starts expanded; header click toggles
     expect(groups.map((g) => g.classList.contains('collapsed'))).toEqual([false, true, true]);
-    (groups[1].querySelector('.group-header') as HTMLElement).click();
+    (q('.group-header', groups[1]) as HTMLElement).click();
     expect(groups[1].classList.contains('collapsed')).toBe(false);
   });
 
@@ -135,26 +142,23 @@ describe('loading and history list', () => {
         loggedAt: '2026-11-14T12:04:00Z',
       }),
     ]);
-    const badge = (id: string) =>
-      document.querySelector(`[data-entry-id="${id}"] .entry-status-badge`).className;
+    const badge = (id: string) => q(`[data-entry-id="${id}"] .entry-status-badge`).className;
     expect(badge('s')).toContain('entry-status-green');
     expect(badge('f')).toContain('entry-status-red');
     expect(badge('k')).toContain('entry-status-gray');
     expect(badge('u')).toContain('entry-status-red');
-    expect(document.querySelector('[data-entry-id="kb"] .detail-tag').textContent).toBe(
-      'Angle: 40°',
-    );
+    expect(q('[data-entry-id="kb"] .detail-tag').textContent).toBe('Angle: 40°');
     const time = new Date('2026-11-14T12:00:00Z').toLocaleTimeString(undefined, {
       hour: '2-digit',
       minute: '2-digit',
       hour12: false,
     });
-    expect(document.querySelector('[data-entry-id="s"] .entry-time').textContent).toBe(time);
+    expect(q('[data-entry-id="s"] .entry-time').textContent).toBe(time);
   });
 
   it('escapes HTML in user text', async () => {
     await start([attempt({ grade: '<b>v4</b>' })]);
-    expect(document.querySelector('.grade-badge').innerHTML).toBe('&lt;b&gt;v4&lt;/b&gt;');
+    expect(q('.grade-badge').innerHTML).toBe('&lt;b&gt;v4&lt;/b&gt;');
   });
 });
 
@@ -179,9 +183,7 @@ describe('new entry modal', () => {
     expect($<HTMLInputElement>('gradeInput').value).toBe('v5');
     expect($<HTMLInputElement>('boardAngleInput').value).toBe('40');
     expect($('boardAngleGroup').style.display).toBe('flex');
-    expect(document.querySelector('.kind-tab.active').getAttribute('data-kind')).toBe(
-      'kilterboard',
-    );
+    expect(q('.kind-tab.active').getAttribute('data-kind')).toBe('kilterboard');
     expect($('contextBody').classList.contains('hidden')).toBe(true);
     expect($('contextToggleLink').textContent).toBe('Change');
     expect($('contextSummaryText').textContent).toBe('BW Ost • kilterboard');
@@ -250,7 +252,7 @@ describe('new entry modal', () => {
   it('fills the angle from angle chips', async () => {
     await start([attempt({ kind: 'kilterboard' })]);
     $('openModalBtn').click();
-    (document.querySelector('#angleChips [data-angle="45"]') as HTMLElement).click();
+    (q('#angleChips [data-angle="45"]') as HTMLElement).click();
     expect($<HTMLInputElement>('boardAngleInput').value).toBe('45');
   });
 
@@ -332,13 +334,11 @@ describe('custom outcomes', () => {
     expect($('categorySelectorRow').style.display).toBe('none');
     type('customOutcomeInput', 'x');
     expect($('categorySelectorRow').style.display).toBe('flex');
-    (document.querySelector('.cat-btn[data-cat="skip"]') as HTMLElement).click();
-    expect(document.querySelector('.cat-btn[data-cat="skip"]').className).toBe(
-      'cat-btn selected-skip',
-    );
+    (q('.cat-btn[data-cat="skip"]') as HTMLElement).click();
+    expect(q('.cat-btn[data-cat="skip"]').className).toBe('cat-btn selected-skip');
     type('customOutcomeInput', '');
     expect($('categorySelectorRow').style.display).toBe('none');
-    expect(document.querySelector('.cat-btn[data-cat="skip"]').className).toBe('cat-btn');
+    expect(q('.cat-btn[data-cat="skip"]').className).toBe('cat-btn');
   });
 
   it('validates name and category', async () => {
@@ -358,11 +358,11 @@ describe('custom outcomes', () => {
     await start([attempt()]);
     $('openModalBtn').click();
     type('customOutcomeInput', '  Fell At Crux ');
-    (document.querySelector('.cat-btn[data-cat="failure"]') as HTMLElement).click();
+    (q('.cat-btn[data-cat="failure"]') as HTMLElement).click();
     $('saveCustomOutcomeBtn').click();
     expect(storedOutcomes()).toContainEqual({ name: 'fell at crux', category: 'failure' });
     expect(stored()[1]).toMatchObject({ outcome: 'fell at crux', location: 'BW Ost' });
-    expect(document.querySelector('.entry-status-badge').className).toContain('entry-status-red');
+    expect(q('.entry-status-badge').className).toContain('entry-status-red');
     expect($('outcomes-list').querySelectorAll('option')).toHaveLength(4);
   });
 
@@ -370,7 +370,7 @@ describe('custom outcomes', () => {
     await start([attempt()]);
     $('openModalBtn').click();
     type('customOutcomeInput', 'FLASH');
-    (document.querySelector('.cat-btn[data-cat="failure"]') as HTMLElement).click();
+    (q('.cat-btn[data-cat="failure"]') as HTMLElement).click();
     $('saveCustomOutcomeBtn').click();
     expect(storedOutcomes()).toEqual(OUTCOMES);
     expect(stored()[1].outcome).toBe('flash');
@@ -391,8 +391,7 @@ describe('editing and deleting', () => {
     attempt({ id: 'a2', loggedAt: '2026-11-14T13:00:00Z', grade: 'v4' }),
   ];
 
-  const edit = (id: string) =>
-    (document.querySelector(`[data-entry-id="${id}"] .edit-btn`) as HTMLElement).click();
+  const edit = (id: string) => (q(`[data-entry-id="${id}"] .edit-btn`) as HTMLElement).click();
 
   it('opens the entry for editing', async () => {
     await start(data());
@@ -427,7 +426,7 @@ describe('editing and deleting', () => {
   it('drops the board angle when the kind changes', async () => {
     await start(data());
     edit('a1');
-    (document.querySelector('.kind-tab[data-kind="route"]') as HTMLElement).click();
+    (q('.kind-tab[data-kind="route"]') as HTMLElement).click();
     clickChip('frequentOutcomesRow', 'flash');
     expect(stored()[0].kind).toBe('route');
     expect(stored()[0]).not.toHaveProperty('boardAngle');
@@ -488,7 +487,7 @@ describe('backup menu', () => {
       vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (
         this: HTMLAnchorElement,
       ) {
-        downloadName = this.getAttribute('download');
+        downloadName = this.getAttribute('download') ?? undefined;
       });
     });
 
@@ -521,8 +520,8 @@ describe('backup menu', () => {
       $('openMenuBtn').click();
       $('exportJsonBtn').click();
       expect(downloadName).toBe('clog_backup_2026-11-15.json');
-      expect(blob.type).toBe('application/json;charset=utf-8;');
-      const payload = JSON.parse(await blob.text());
+      expect(blob!.type).toBe('application/json;charset=utf-8;');
+      const payload = JSON.parse(await blob!.text());
       expect(payload).toEqual({
         version: '1.2.0',
         exportedAt: NOW.toISOString(),
@@ -571,9 +570,7 @@ describe('backup menu', () => {
       expect(stored().map((a) => a.id)).toEqual(['b1', 'b2']);
       expect(storedOutcomes()).toEqual(backup.outcomes);
       expect(document.querySelectorAll('.entry-card')).toHaveLength(2);
-      expect(document.querySelector('.entry-status-badge').className).toContain(
-        'entry-status-green',
-      );
+      expect(q('.entry-status-badge').className).toContain('entry-status-green');
       expect($('menuModalOverlay').classList.contains('active')).toBe(false);
     });
 

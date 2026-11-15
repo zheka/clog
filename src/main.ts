@@ -5,6 +5,7 @@ import { matchExistingCasing, quickOutcomes, suggestValues } from './core/sugges
 import type { Attempt, Category, Kind, Outcome } from './core/types';
 import { backupFileName, createBackup, parseBackup } from './data/backup';
 import { loadData, saveData } from './data/storage';
+import { byId, downloadFile, escapeHtml } from './ui/dom';
 
 let history: Attempt[] = [];
 let outcomes: Outcome[] = [];
@@ -12,44 +13,43 @@ let editingId: string | null = null;
 let selectedKind: Kind = 'bouldering';
 let selectedCustomCategory: Category | null = null;
 
-const historyList = document.getElementById('historyList');
-const openModalBtn = document.getElementById('openModalBtn');
-const closeModalBtn = document.getElementById('closeModalBtn');
-const modalOverlay = document.getElementById('modalOverlay');
-const modalTitle = document.getElementById('modalTitle');
-const deleteBtn = document.getElementById('deleteBtn');
+const historyList = byId('historyList');
+const openModalBtn = byId('openModalBtn');
+const closeModalBtn = byId('closeModalBtn');
+const modalOverlay = byId('modalOverlay');
+const modalTitle = byId('modalTitle');
+const deleteBtn = byId('deleteBtn');
 
-const openMenuBtn = document.getElementById('openMenuBtn');
-const closeMenuModalBtn = document.getElementById('closeMenuModalBtn');
-const menuModalOverlay = document.getElementById('menuModalOverlay');
-const exportJsonBtn = document.getElementById('exportJsonBtn');
-const importJsonBtn = document.getElementById('importJsonBtn');
-const importFileInput = document.getElementById('importFileInput') as HTMLInputElement;
+const openMenuBtn = byId('openMenuBtn');
+const closeMenuModalBtn = byId('closeMenuModalBtn');
+const menuModalOverlay = byId('menuModalOverlay');
+const exportJsonBtn = byId('exportJsonBtn');
+const importJsonBtn = byId('importJsonBtn');
+const importFileInput = byId<HTMLInputElement>('importFileInput');
 
-const contextHeader = document.getElementById('contextHeader');
-const contextBody = document.getElementById('contextBody');
-const contextSummaryText = document.getElementById('contextSummaryText');
-const contextToggleLink = document.getElementById('contextToggleLink');
+const contextHeader = byId('contextHeader');
+const contextBody = byId('contextBody');
+const contextSummaryText = byId('contextSummaryText');
+const contextToggleLink = byId('contextToggleLink');
 
 const kindTabs = document.querySelectorAll<HTMLElement>('.kind-tab');
-const boardAngleGroup = document.getElementById('boardAngleGroup');
-const boardAngleInput = document.getElementById('boardAngleInput') as HTMLInputElement;
+const boardAngleGroup = byId('boardAngleGroup');
+const boardAngleInput = byId<HTMLInputElement>('boardAngleInput');
 const angleChips = document.querySelectorAll<HTMLElement>('#angleChips .chip-small');
 
-const locationInput = document.getElementById('locationInput') as HTMLInputElement;
-const gradeInput = document.getElementById('gradeInput') as HTMLInputElement;
-const locationChips = document.getElementById('locationChips');
-const gradeChips = document.getElementById('gradeChips');
-const frequentOutcomesRow = document.getElementById('frequentOutcomesRow');
+const locationInput = byId<HTMLInputElement>('locationInput');
+const gradeInput = byId<HTMLInputElement>('gradeInput');
+const locationChips = byId('locationChips');
+const gradeChips = byId('gradeChips');
+const frequentOutcomesRow = byId('frequentOutcomesRow');
 
-const customOutcomeInput = document.getElementById('customOutcomeInput') as HTMLInputElement;
-const categorySelectorRow = document.getElementById('categorySelectorRow');
+const customOutcomeInput = byId<HTMLInputElement>('customOutcomeInput');
+const categorySelectorRow = byId('categorySelectorRow');
 const catBtns = document.querySelectorAll<HTMLElement>('.cat-btn');
-const saveCustomOutcomeBtn = document.getElementById('saveCustomOutcomeBtn');
+const saveCustomOutcomeBtn = byId('saveCustomOutcomeBtn');
 
 function updateOutcomesDatalist() {
-  const dl = document.getElementById('outcomes-list');
-  if (!dl) return;
+  const dl = byId('outcomes-list');
   dl.innerHTML = '';
   sortByName(outcomes).forEach((o) => {
     const opt = document.createElement('option');
@@ -204,7 +204,7 @@ function renderHistory() {
       }
 
       card.innerHTML = cardHtml;
-      card.querySelector('.edit-btn').addEventListener('click', () => {
+      card.querySelector<HTMLElement>('.edit-btn')!.addEventListener('click', () => {
         openModalForEdit(entry.id);
       });
 
@@ -214,10 +214,6 @@ function renderHistory() {
     groupEl.appendChild(bodyEl);
     historyList.appendChild(groupEl);
   });
-}
-
-function escapeHtml(str: string): string {
-  return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
 function openMenuModal() {
@@ -363,18 +359,6 @@ function handleOutcomeSelect(chosenOutcome: string) {
   closeModal();
 }
 
-function downloadFile(fileName: string, content: string, mimeType: string) {
-  const blob = new Blob([content], { type: mimeType });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.setAttribute('href', url);
-  link.setAttribute('download', fileName);
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
-}
-
 function exportBackup() {
   if (history.length === 0) {
     alert('No attempts to export.');
@@ -386,13 +370,13 @@ function exportBackup() {
 }
 
 function handleJSONImport(event: Event) {
-  const file = (event.target as HTMLInputElement).files[0];
+  const file = (event.target as HTMLInputElement).files?.[0];
   if (!file) return;
 
   const reader = new FileReader();
-  reader.onload = function (e) {
+  reader.onload = function () {
     try {
-      const backup = parseBackup(e.target.result as string);
+      const backup = parseBackup(reader.result as string);
 
       if (backup.attempts.length === 0) {
         alert('No valid climbing attempts found in the selected file.');
@@ -420,7 +404,7 @@ function handleJSONImport(event: Event) {
       closeMenuModal();
       alert(`Successfully imported ${backup.attempts.length} attempts.`);
     } catch (err) {
-      alert('Failed to import JSON file: ' + err.message);
+      alert('Failed to import JSON file: ' + (err as Error).message);
     } finally {
       importFileInput.value = '';
     }
@@ -457,7 +441,7 @@ kindTabs.forEach((tab) => {
 
 angleChips.forEach((chip) => {
   chip.addEventListener('click', () => {
-    boardAngleInput.value = chip.dataset.angle;
+    boardAngleInput.value = chip.dataset.angle ?? '';
   });
 });
 

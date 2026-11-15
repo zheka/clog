@@ -10,8 +10,7 @@
     "noEmit": true,
     "skipLibCheck": true,
 
-    // Step 1: loose checking for a 1:1 port. Tightened to "strict": true in step 2.
-    "strict": false,
+    "strict": true,
     "noUnusedLocals": true,
     "noFallthroughCasesInSwitch": true
   },

@@ -61,9 +61,9 @@ describe('parseBackup', () => {
         { ...attempt, id: 'u', kind: 'ice' },
       ]),
     );
-    expect(attempts.find((a) => a.id === 'k').boardAngle).toBe(40);
+    expect(attempts.find((a) => a.id === 'k')!.boardAngle).toBe(40);
     expect(attempts.find((a) => a.id === 'b')).not.toHaveProperty('boardAngle');
-    expect(attempts.find((a) => a.id === 'u').kind).toBe('bouldering');
+    expect(attempts.find((a) => a.id === 'u')!.kind).toBe('bouldering');
   });
 
   it('trims text fields and sorts oldest first', () => {
