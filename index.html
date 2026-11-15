@@ -106,7 +106,7 @@
     .history-list {
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 20px;
     }
 
     .empty-state {
@@ -115,6 +115,7 @@
       color: var(--text-muted);
     }
 
+    /* Group Container by Location & Kind */
     .group-container {
       display: flex;
       flex-direction: column;
@@ -124,25 +125,73 @@
     .group-header {
       display: flex;
       align-items: center;
-      gap: 8px;
-      font-size: 0.9rem;
+      justify-content: space-between;
+      font-size: 0.95rem;
       font-weight: 700;
       color: var(--primary);
-      padding: 4px 0;
+      padding: 8px 0;
       border-bottom: 1px solid var(--border);
+      text-transform: capitalize;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .group-header-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
 
     .group-header svg {
-      width: 14px;
-      height: 14px;
+      width: 16px;
+      height: 16px;
       fill: currentColor;
     }
 
+    .group-chevron {
+      width: 16px;
+      height: 16px;
+      stroke: currentColor;
+      stroke-width: 2.5;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      transition: transform 0.2s ease;
+    }
+
+    .group-container.collapsed .group-chevron {
+      transform: rotate(-90deg);
+    }
+
+    .group-body {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      overflow: hidden;
+      transition: max-height 0.25s ease-out, opacity 0.2s ease-out;
+      max-height: 2000px;
+      opacity: 1;
+    }
+
+    .group-container.collapsed .group-body {
+      max-height: 0;
+      opacity: 0;
+      gap: 0;
+      pointer-events: none;
+    }
+
+    /* Entry Card */
     .entry-card {
       background: var(--card-bg);
       border-radius: 12px;
       padding: 12px 14px;
       border: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .entry-main-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -151,14 +200,14 @@
     .entry-left {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
+      flex-wrap: wrap;
     }
 
     .entry-time {
       font-size: 0.8rem;
       color: var(--text-muted);
       font-variant-numeric: tabular-nums;
-      min-width: 42px;
     }
 
     .grade-badge {
@@ -214,6 +263,24 @@
       color: var(--primary);
     }
 
+    .entry-details-row {
+      display: flex;
+      gap: 8px;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      padding-top: 4px;
+      border-top: 1px dashed rgba(63, 63, 78, 0.5);
+    }
+
+    .detail-tag {
+      background: var(--input-bg);
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+
+    /* Floating Add Button */
     .fab {
       position: fixed;
       bottom: 20px;
@@ -239,6 +306,7 @@
       }
     }
 
+    /* Modal Sheet */
     .modal-overlay {
       position: fixed;
       top: 0;
@@ -316,7 +384,7 @@
       font-weight: 700;
     }
 
-    input[type="text"] {
+    input[type="text"], input[type="number"] {
       width: 100%;
       padding: 10px 12px;
       background: var(--input-bg);
@@ -327,8 +395,78 @@
       outline: none;
     }
 
-    input[type="text"]:focus {
+    input[type="text"]:focus, input[type="number"]:focus {
       border-color: var(--primary);
+    }
+
+    /* Collapsible Location & Kind Context Section */
+    .context-accordion-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--input-bg);
+      border: 1px solid var(--border);
+      padding: 10px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .context-summary {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .context-toggle-link {
+      font-size: 0.8rem;
+      color: var(--primary);
+      font-weight: 600;
+    }
+
+    .context-collapsible-body {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      background: var(--input-bg);
+      border: 1px solid var(--border);
+      border-top: none;
+      padding: 12px;
+      border-bottom-left-radius: 8px;
+      border-bottom-right-radius: 8px;
+      margin-top: -6px;
+    }
+
+    .context-collapsible-body.hidden {
+      display: none;
+    }
+
+    .kind-picker {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      background: var(--card-bg);
+      padding: 4px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+
+    .kind-tab {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 8px 4px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s ease;
+    }
+
+    .kind-tab.active {
+      background: var(--primary);
+      color: white;
     }
 
     .chips-container {
@@ -413,6 +551,70 @@
     .chip.skip:active {
       background: var(--skip);
       color: white;
+    }
+
+    /* Custom Outcome Input Box */
+    .custom-outcome-box {
+      background: var(--input-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .custom-outcome-input-row {
+      display: flex;
+      gap: 6px;
+    }
+
+    .category-selector-row {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .cat-btn {
+      flex: 1;
+      padding: 6px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--card-bg);
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: center;
+    }
+
+    .cat-btn.selected-success {
+      background: rgba(16, 185, 129, 0.2);
+      border-color: var(--success);
+      color: var(--success);
+    }
+
+    .cat-btn.selected-failure {
+      background: rgba(239, 68, 68, 0.2);
+      border-color: var(--failure);
+      color: var(--failure);
+    }
+
+    .cat-btn.selected-skip {
+      background: rgba(107, 114, 128, 0.2);
+      border-color: var(--skip);
+      color: var(--text);
+    }
+
+    .save-custom-btn {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
     }
 
     .form-actions {
@@ -547,10 +749,40 @@
         </div>
 
         <form id="entryForm">
+          <!-- Collapsible Location & Kind Context Section -->
           <div class="form-group">
-            <label for="locationInput">Location</label>
-            <input type="text" id="locationInput" placeholder="e.g. element boulders" autocomplete="off" required />
-            <div id="locationChips" class="chips-container"></div>
+            <label>Context</label>
+            <div id="contextHeader" class="context-accordion-header">
+              <span id="contextSummaryText" class="context-summary">BW Ost &bull; bouldering</span>
+              <span id="contextToggleLink" class="context-toggle-link">Change</span>
+            </div>
+            <div id="contextBody" class="context-collapsible-body hidden">
+              <div class="form-group">
+                <label>Climbing Type</label>
+                <div class="kind-picker">
+                  <button type="button" class="kind-tab active" data-kind="bouldering">Bouldering</button>
+                  <button type="button" class="kind-tab" data-kind="route">Route</button>
+                  <button type="button" class="kind-tab" data-kind="kilterboard">Kilterboard</button>
+                </div>
+              </div>
+
+              <div class="form-group" id="boardAngleGroup" style="display: none;">
+                <label for="boardAngleInput">Board Angle (&deg;)</label>
+                <input type="number" id="boardAngleInput" placeholder="e.g. 40" min="0" max="70" />
+                <div id="angleChips" class="chips-container">
+                  <span class="chip-small" data-angle="30">30&deg;</span>
+                  <span class="chip-small" data-angle="40">40&deg;</span>
+                  <span class="chip-small" data-angle="45">45&deg;</span>
+                  <span class="chip-small" data-angle="50">50&deg;</span>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="locationInput">Location</label>
+                <input type="text" id="locationInput" placeholder="e.g. element boulders" autocomplete="off" />
+                <div id="locationChips" class="chips-container"></div>
+              </div>
+            </div>
           </div>
 
           <div class="form-group">
@@ -559,35 +791,33 @@
             <div id="gradeChips" class="chips-container"></div>
           </div>
 
+          <!-- Outcome Section: Top Frequent Chips -->
           <div class="form-group">
-            <label>Outcome (Tap to Log)</label>
+            <label>Outcome</label>
             <div class="outcome-picker">
-              <div class="outcome-row">
-                <span class="chip success" data-outcome="flash">flash</span>
-                <span class="chip success" data-outcome="sent">sent</span>
-              </div>
-              <div class="outcome-row">
-                <span class="chip failure" data-outcome="grip out">grip out</span>
-                <span class="chip failure" data-outcome="moving hand">moving hand</span>
-                <span class="chip failure" data-outcome="no stick">no stick</span>
-                <span class="chip failure" data-outcome="missed move">missed move</span>
-              </div>
-              <div class="outcome-row">
-                <span class="chip failure" data-outcome="foot off">foot off</span>
-                <span class="chip failure" data-outcome="swung off">swung off</span>
-              </div>
-              <div class="outcome-row">
-                <span class="chip failure" data-outcome="scared">scared</span>
-                <span class="chip failure" data-outcome="pumped">pumped</span>
-              </div>
-              <div class="outcome-row">
-                <span class="chip failure" data-outcome="unclear">unclear</span>
-              </div>
-              <div class="outcome-row">
-                <span class="chip skip" data-outcome="working">working</span>
-                <span class="chip skip" data-outcome="voided">voided</span>
+              <div class="outcome-row" id="frequentOutcomesRow">
+                <!-- Dynamically rendered top frequent outcomes -->
               </div>
             </div>
+          </div>
+
+          <!-- Collapsible Custom Outcome On-The-Fly Section (Collapsed by default via <details>) -->
+          <div class="form-group">
+            <details class="custom-outcomes-accordion" style="background: var(--input-bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px;">
+              <summary style="font-size: 0.75rem; color: var(--text-muted); cursor: pointer; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; user-select: none;">Add Custom Outcome</summary>
+              <div class="custom-outcome-box" style="margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); background: transparent; border: none; padding: 0;">
+                <div class="custom-outcome-input-row">
+                  <input type="text" id="customOutcomeInput" placeholder="e.g. sloppy heel hook" autocomplete="off" list="outcomes-list" />
+                  <datalist id="outcomes-list"></datalist>
+                </div>
+                <div class="category-selector-row" id="categorySelectorRow" style="display: none; margin-top: 8px;">
+                  <button type="button" class="cat-btn" data-cat="success">🟢 Success</button>
+                  <button type="button" class="cat-btn" data-cat="failure">🔴 Failure</button>
+                  <button type="button" class="cat-btn" data-cat="skip">⚪ Skip</button>
+                  <button type="button" id="saveCustomOutcomeBtn" class="save-custom-btn">Save & Log</button>
+                </div>
+              </div>
+            </details>
           </div>
 
           <div class="form-actions">
@@ -600,34 +830,38 @@
 
   <script>
     const STORAGE_KEY = 'climb_attempts_history';
-    const CURRENT_VERSION = '1.0.0';
+    const OUTCOMES_KEY = 'climb_outcomes_registry';
+    const CURRENT_VERSION = '1.2.0';
 
-    const OUTCOME_CATEGORY_MAP = {
-      'flash': 'success',
-      'sent': 'success',
-      'grip out': 'failure',
-      'moving hand': 'failure',
-      'no stick': 'failure',
-      'missed move': 'failure',
-      'foot off': 'failure',
-      'swung off': 'failure',
-      'scared': 'failure',
-      'pumped': 'failure',
-      'unclear': 'failure',
-      'working': 'skip',
-      'voided': 'skip',
-      'warmup': 'success',
-      'power': 'failure',
-      'body tension': 'failure',
-      'crimp': 'failure',
-      'pocket': 'failure',
-      'foot slipped': 'failure',
-      'foot out': 'failure',
-      'hand off moving': 'failure'
-    };
+    const DEFAULT_OUTCOMES = [
+      { name: 'flash', category: 'success' },
+      { name: 'sent', category: 'success' },
+      { name: 'grip out', category: 'failure' },
+      { name: 'moving hand', category: 'failure' },
+      { name: 'no stick', category: 'failure' },
+      { name: 'missed move', category: 'failure' },
+      { name: 'foot off', category: 'failure' },
+      { name: 'swung off', category: 'failure' },
+      { name: 'scared', category: 'failure' },
+      { name: 'pumped', category: 'failure' },
+      { name: 'unclear', category: 'failure' },
+      { name: 'working', category: 'skip' },
+      { name: 'voided', category: 'skip' },
+      { name: 'warmup', category: 'success' },
+      { name: 'power', category: 'failure' },
+      { name: 'body tension', category: 'failure' },
+      { name: 'crimp', category: 'failure' },
+      { name: 'pocket', category: 'failure' },
+      { name: 'foot slipped', category: 'failure' },
+      { name: 'foot out', category: 'failure' },
+      { name: 'hand off moving', category: 'failure' }
+    ];
 
     let history = [];
+    let outcomes = []; // Array of { name, category }
     let editingId = null;
+    let selectedKind = 'bouldering';
+    let selectedCustomCategory = null;
 
     const historyList = document.getElementById('historyList');
     const openModalBtn = document.getElementById('openModalBtn');
@@ -643,11 +877,26 @@
     const importJsonBtn = document.getElementById('importJsonBtn');
     const importFileInput = document.getElementById('importFileInput');
 
+    const contextHeader = document.getElementById('contextHeader');
+    const contextBody = document.getElementById('contextBody');
+    const contextSummaryText = document.getElementById('contextSummaryText');
+    const contextToggleLink = document.getElementById('contextToggleLink');
+
+    const kindTabs = document.querySelectorAll('.kind-tab');
+    const boardAngleGroup = document.getElementById('boardAngleGroup');
+    const boardAngleInput = document.getElementById('boardAngleInput');
+    const angleChips = document.querySelectorAll('#angleChips .chip-small');
+
     const locationInput = document.getElementById('locationInput');
     const gradeInput = document.getElementById('gradeInput');
     const locationChips = document.getElementById('locationChips');
     const gradeChips = document.getElementById('gradeChips');
-    const outcomeChips = document.querySelectorAll('.outcome-picker .chip');
+    const frequentOutcomesRow = document.getElementById('frequentOutcomesRow');
+
+    const customOutcomeInput = document.getElementById('customOutcomeInput');
+    const categorySelectorRow = document.getElementById('categorySelectorRow');
+    const catBtns = document.querySelectorAll('.cat-btn');
+    const saveCustomOutcomeBtn = document.getElementById('saveCustomOutcomeBtn');
 
     function generateId() {
       if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -656,29 +905,67 @@
       return 'id_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
     }
 
-    function loadHistory() {
+    function loadData() {
+      // Load history
       const data = localStorage.getItem(STORAGE_KEY);
-      if (!data) {
-        history = [];
-        return;
+      if (data) {
+        try {
+          const parsed = JSON.parse(data);
+          const rawAttempts = Array.isArray(parsed) ? parsed : (parsed.attempts || parsed.entries || []);
+          history = rawAttempts.map(item => {
+            const entry = {
+              id: item.id || generateId(),
+              loggedAt: item.loggedAt || item.timestamp || new Date().toISOString(),
+              kind: ['bouldering', 'route', 'kilterboard'].includes(item.kind) ? item.kind : 'bouldering',
+              location: String(item.location || 'Unknown').trim(),
+              grade: String(item.grade || '').trim(),
+              outcome: String(item.outcome || '').trim()
+            };
+            if (entry.kind === 'kilterboard' && item.boardAngle !== undefined && item.boardAngle !== null && item.boardAngle !== '') {
+              entry.boardAngle = Number(item.boardAngle);
+            }
+            return entry;
+          });
+        } catch (e) {
+          history = [];
+        }
       }
-      try {
-        const parsed = JSON.parse(data);
-        const rawAttempts = Array.isArray(parsed) ? parsed : (parsed.attempts || parsed.entries || []);
-        history = rawAttempts.map(item => ({
-          id: item.id || generateId(),
-          loggedAt: item.loggedAt || item.timestamp || new Date().toISOString(),
-          location: String(item.location || 'Unknown').trim(),
-          grade: String(item.grade || '').trim(),
-          outcome: String(item.outcome || '').trim()
-        }));
-      } catch (e) {
-        history = [];
+
+      // Load outcomes registry
+      const outcomesData = localStorage.getItem(OUTCOMES_KEY);
+      if (outcomesData) {
+        try {
+          outcomes = JSON.parse(outcomesData);
+        } catch (e) {
+          outcomes = [...DEFAULT_OUTCOMES];
+        }
+      } else {
+        outcomes = [...DEFAULT_OUTCOMES];
       }
     }
 
-    function saveHistory() {
+    function saveData() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
+      localStorage.setItem(OUTCOMES_KEY, JSON.stringify(outcomes));
+    }
+
+    function getCategoryForOutcome(outcomeName) {
+      const lower = outcomeName.toLowerCase().trim();
+      const found = outcomes.find(o => o.name.toLowerCase() === lower);
+      if (found) return found.category;
+      return 'failure'; // fallback
+    }
+
+    function updateOutcomesDatalist() {
+      const dl = document.getElementById('outcomes-list');
+      if (!dl) return;
+      dl.innerHTML = '';
+      const sortedOutcomes = [...outcomes].sort((a, b) => a.name.localeCompare(b.name));
+      sortedOutcomes.forEach(o => {
+        const opt = document.createElement('option');
+        opt.value = o.name;
+        dl.appendChild(opt);
+      });
     }
 
     function resolveExistingCasing(fieldKey, typedValue) {
@@ -686,7 +973,7 @@
       if (!trimmed) return '';
       for (let i = history.length - 1; i >= 0; i--) {
         const val = history[i][fieldKey];
-        if (val && typeof val === 'string' && val.trim().toLowerCase() === trimmed.toLowerCase()) {
+        if (val && typeof val === 'string' && val.trim().toLowerCase() === typedValue.trim().toLowerCase()) {
           return val.trim();
         }
       }
@@ -698,11 +985,29 @@
         alert('No attempts to export.');
         return;
       }
+      const cleanAttempts = history.map(item => {
+        const attempt = {
+          id: item.id,
+          loggedAt: item.loggedAt,
+          kind: item.kind,
+          location: item.location,
+          grade: item.grade,
+          outcome: item.outcome
+        };
+        if (item.kind === 'kilterboard' && item.boardAngle !== undefined && item.boardAngle !== null && !isNaN(item.boardAngle)) {
+          attempt.boardAngle = Number(item.boardAngle);
+        }
+        return attempt;
+      });
+
+      const sortedOutcomes = [...outcomes].sort((a, b) => a.name.localeCompare(b.name));
       const backupPayload = {
         version: CURRENT_VERSION,
         exportedAt: new Date().toISOString(),
-        attempts: history
+        outcomes: sortedOutcomes,
+        attempts: cleanAttempts
       };
+
       const jsonContent = JSON.stringify(backupPayload, null, 2);
       const blob = new Blob([jsonContent], { type: 'application/json;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
@@ -742,6 +1047,12 @@
             }
           }
 
+          if (parsed.outcomes && Array.isArray(parsed.outcomes)) {
+            outcomes = parsed.outcomes;
+          } else if (parsed.customOutcomes && Array.isArray(parsed.customOutcomes)) {
+            outcomes = parsed.customOutcomes;
+          }
+
           const seenIds = new Set();
           history = validAttempts.map(entry => {
             let id = entry.id;
@@ -749,18 +1060,24 @@
               id = generateId();
             }
             seenIds.add(String(id));
-            return {
+            const mapped = {
               id: id,
               loggedAt: entry.loggedAt || entry.timestamp,
+              kind: ['bouldering', 'route', 'kilterboard'].includes(entry.kind) ? entry.kind : 'bouldering',
               location: String(entry.location).trim(),
               grade: String(entry.grade).trim(),
               outcome: String(entry.outcome).trim()
             };
+            if (mapped.kind === 'kilterboard' && entry.boardAngle !== undefined && entry.boardAngle !== null && entry.boardAngle !== '') {
+              mapped.boardAngle = Number(entry.boardAngle);
+            }
+            return mapped;
           });
 
           history.sort((a, b) => new Date(a.loggedAt) - new Date(b.loggedAt));
-          saveHistory();
+          saveData();
           renderHistory();
+          updateOutcomesDatalist();
           closeMenuModal();
           alert(`Successfully imported ${validAttempts.length} attempts.`);
         } catch (err) {
@@ -770,6 +1087,58 @@
         }
       };
       reader.readAsText(file);
+    }
+
+    function setKind(kind) {
+      selectedKind = kind;
+      kindTabs.forEach(tab => {
+        if (tab.dataset.kind === kind) {
+          tab.classList.add('active');
+        } else {
+          tab.classList.remove('active');
+        }
+      });
+      if (kind === 'kilterboard') {
+        boardAngleGroup.style.display = 'flex';
+      } else {
+        boardAngleGroup.style.display = 'none';
+        boardAngleInput.value = '';
+      }
+      updateContextSummary();
+    }
+
+    function updateContextSummary() {
+      const loc = locationInput.value.trim() || 'Unknown Location';
+      contextSummaryText.textContent = `${loc} • ${selectedKind}`;
+    }
+
+    function getFrequentOutcomes() {
+      const counts = {};
+      history.forEach(item => {
+        const out = item.outcome;
+        counts[out] = (counts[out] || 0) + 1;
+      });
+      const defaults = ['flash', 'sent', 'grip out', 'foot off', 'working'];
+      const sorted = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
+      
+      const combined = [...sorted];
+      defaults.forEach(d => {
+        if (!combined.includes(d)) combined.push(d);
+      });
+      return combined.slice(0, 5);
+    }
+
+    function renderFrequentOutcomes() {
+      frequentOutcomesRow.innerHTML = '';
+      const freqs = getFrequentOutcomes();
+      freqs.forEach(outcome => {
+        const cat = getCategoryForOutcome(outcome);
+        const chip = document.createElement('span');
+        chip.className = `chip ${cat}`;
+        chip.textContent = outcome;
+        chip.addEventListener('click', () => handleOutcomeSelect(outcome));
+        frequentOutcomesRow.appendChild(chip);
+      });
     }
 
     function getAutocompleteValues(fieldKey, filterText = '') {
@@ -817,6 +1186,7 @@
         chip.addEventListener('click', () => {
           inputElem.value = text;
           updateChips(fieldKey, inputElem, containerElem);
+          updateContextSummary();
         });
         containerElem.appendChild(chip);
       });
@@ -835,17 +1205,14 @@
 
       reversedHistory.forEach(entry => {
         const loc = entry.location || 'Unknown Location';
-        const dateObj = new Date(entry.loggedAt);
-        const dateStr = dateObj.toLocaleDateString(undefined, {
-          month: 'short', day: 'numeric', year: 'numeric'
-        });
-        const groupKey = `${loc}___${dateStr}`;
+        const kind = entry.kind || 'bouldering';
+        const groupKey = `${loc}___${kind}`;
 
         if (!currentGroup || currentGroup.key !== groupKey) {
           currentGroup = {
             key: groupKey,
             location: loc,
-            date: dateStr,
+            kind: kind,
             entries: []
           };
           groups.push(currentGroup);
@@ -853,50 +1220,78 @@
         currentGroup.entries.push(entry);
       });
 
-      groups.forEach(group => {
+      groups.forEach((group, index) => {
         const groupEl = document.createElement('div');
         groupEl.className = 'group-container';
+        const isCollapsed = index !== 0;
+        if (isCollapsed) {
+          groupEl.classList.add('collapsed');
+        }
 
         const headerEl = document.createElement('div');
         headerEl.className = 'group-header';
         headerEl.innerHTML = `
-          <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
-          <span>${escapeHtml(group.location)} &bull; ${group.date}</span>
+          <div class="group-header-left">
+            <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+            <span>${escapeHtml(group.location)} &bull; ${group.kind}</span>
+          </div>
+          <svg class="group-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"></polyline></svg>
         `;
+        
+        headerEl.addEventListener('click', () => {
+          groupEl.classList.toggle('collapsed');
+        });
         groupEl.appendChild(headerEl);
+
+        const bodyEl = document.createElement('div');
+        bodyEl.className = 'group-body';
 
         group.entries.forEach(entry => {
           const card = document.createElement('div');
           card.className = 'entry-card';
           card.dataset.entryId = entry.id;
 
-          const timeStr = new Date(entry.loggedAt).toLocaleTimeString(undefined, {
-            hour: '2-digit', minute: '2-digit', hour12: false
-          });
+          const dateObj = new Date(entry.loggedAt);
+          const dateStr = dateObj.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+          const timeStr = dateObj.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: false });
+          const dateTimeDisplay = `${dateStr}, ${timeStr}`;
 
-          const cat = OUTCOME_CATEGORY_MAP[entry.outcome] || 'failure';
+          const cat = getCategoryForOutcome(entry.outcome);
           let badgeClass = 'entry-status-gray';
           if (cat === 'success') badgeClass = 'entry-status-green';
           if (cat === 'failure') badgeClass = 'entry-status-red';
 
-          card.innerHTML = `
-            <div class="entry-left">
-              <span class="entry-time">${timeStr}</span>
-              <span class="grade-badge">${escapeHtml(entry.grade)}</span>
-              <span class="entry-status-badge ${badgeClass}">${escapeHtml(entry.outcome)}</span>
-            </div>
-            <div class="entry-right">
-              <button type="button" class="edit-btn" data-id="${entry.id}">Edit</button>
+          let cardHtml = `
+            <div class="entry-main-row">
+              <div class="entry-left">
+                <span class="entry-time">${dateTimeDisplay}</span>
+                <span class="grade-badge">${escapeHtml(entry.grade)}</span>
+                <span class="entry-status-badge ${badgeClass}">${escapeHtml(entry.outcome)}</span>
+              </div>
+              <div class="entry-right">
+                <button type="button" class="edit-btn" data-id="${entry.id}">Edit</button>
+              </div>
             </div>
           `;
-          
+
+          let detailsHtml = '';
+          if (entry.kind === 'kilterboard' && entry.boardAngle !== undefined && entry.boardAngle !== null) {
+            detailsHtml += `<span class="detail-tag">Angle: ${entry.boardAngle}&deg;</span>`;
+          }
+
+          if (detailsHtml) {
+            cardHtml += `<div class="entry-details-row">${detailsHtml}</div>`;
+          }
+
+          card.innerHTML = cardHtml;
           card.querySelector('.edit-btn').addEventListener('click', () => {
             openModalForEdit(entry.id);
           });
 
-          groupEl.appendChild(card);
+          bodyEl.appendChild(card);
         });
 
+        groupEl.appendChild(bodyEl);
         historyList.appendChild(groupEl);
       });
     }
@@ -914,11 +1309,42 @@
       deleteBtn.style.display = 'none';
 
       const lastEntry = history.length > 0 ? history[history.length - 1] : null;
+      setKind(lastEntry ? lastEntry.kind || 'bouldering' : 'bouldering');
       locationInput.value = lastEntry ? lastEntry.location || '' : '';
       gradeInput.value = lastEntry ? lastEntry.grade || '' : '';
+      if (lastEntry && lastEntry.kind === 'kilterboard' && lastEntry.boardAngle) {
+        boardAngleInput.value = lastEntry.boardAngle;
+      } else {
+        boardAngleInput.value = '';
+      }
 
+      let shouldExpandContext = true;
+      if (lastEntry && lastEntry.loggedAt) {
+        const diffHours = (new Date() - new Date(lastEntry.loggedAt)) / (1000 * 60 * 60);
+        if (diffHours < 2) {
+          shouldExpandContext = false;
+        }
+      }
+
+      if (shouldExpandContext || history.length === 0) {
+        contextBody.classList.remove('hidden');
+        contextToggleLink.textContent = 'Hide';
+      } else {
+        contextBody.classList.add('hidden');
+        contextToggleLink.textContent = 'Change';
+      }
+
+      updateContextSummary();
       updateChips('location', locationInput, locationChips);
       updateChips('grade', gradeInput, gradeChips);
+      renderFrequentOutcomes();
+      updateOutcomesDatalist();
+
+      customOutcomeInput.value = '';
+      categorySelectorRow.style.display = 'none';
+      selectedCustomCategory = null;
+      catBtns.forEach(b => b.className = 'cat-btn');
+
       modalOverlay.classList.add('active');
     }
 
@@ -930,11 +1356,29 @@
       modalTitle.textContent = 'Edit Entry';
       deleteBtn.style.display = 'block';
 
+      setKind(entry.kind || 'bouldering');
       locationInput.value = entry.location || '';
       gradeInput.value = entry.grade || '';
+      if (entry.kind === 'kilterboard' && entry.boardAngle !== undefined) {
+        boardAngleInput.value = entry.boardAngle;
+      } else {
+        boardAngleInput.value = '';
+      }
+
+      contextBody.classList.add('hidden');
+      contextToggleLink.textContent = 'Change';
+      updateContextSummary();
 
       updateChips('location', locationInput, locationChips);
       updateChips('grade', gradeInput, gradeChips);
+      renderFrequentOutcomes();
+      updateOutcomesDatalist();
+
+      customOutcomeInput.value = '';
+      categorySelectorRow.style.display = 'none';
+      selectedCustomCategory = null;
+      catBtns.forEach(b => b.className = 'cat-btn');
+
       modalOverlay.classList.add('active');
     }
 
@@ -952,31 +1396,55 @@
         return;
       }
 
+      let angleVal = null;
+      if (selectedKind === 'kilterboard') {
+        const parsedAngle = Number(boardAngleInput.value);
+        if (!isNaN(parsedAngle) && boardAngleInput.value.trim() !== '') {
+          angleVal = parsedAngle;
+        }
+      }
+
       let targetId = editingId;
       const isEditing = Boolean(editingId);
 
       if (isEditing) {
         const index = history.findIndex(item => item.id === editingId);
         if (index !== -1) {
+          history[index].kind = selectedKind;
           history[index].location = locVal;
           history[index].grade = gradeVal;
           history[index].outcome = chosenOutcome;
+          if (selectedKind === 'kilterboard' && angleVal !== null) {
+            history[index].boardAngle = angleVal;
+          } else {
+            delete history[index].boardAngle;
+          }
         }
       } else {
         targetId = generateId();
-        history.push({
+        const newEntry = {
           id: targetId,
           loggedAt: new Date().toISOString(),
+          kind: selectedKind,
           location: locVal,
           grade: gradeVal,
           outcome: chosenOutcome
-        });
+        };
+        if (selectedKind === 'kilterboard' && angleVal !== null) {
+          newEntry.boardAngle = angleVal;
+        }
+        history.push(newEntry);
       }
 
-      saveHistory();
+      saveData();
       renderHistory();
       closeModal();
     }
+
+    contextHeader.addEventListener('click', () => {
+      const isHidden = contextBody.classList.toggle('hidden');
+      contextToggleLink.textContent = isHidden ? 'Change' : 'Hide';
+    });
 
     openModalBtn.addEventListener('click', openModal);
     closeModalBtn.addEventListener('click', closeModal);
@@ -990,23 +1458,75 @@
     importJsonBtn.addEventListener('click', () => importFileInput.click());
     importFileInput.addEventListener('change', handleJSONImport);
 
-    locationInput.addEventListener('input', () => updateChips('location', locationInput, locationChips));
+    kindTabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        setKind(tab.dataset.kind);
+      });
+    });
+
+    angleChips.forEach(chip => {
+      chip.addEventListener('click', () => {
+        boardAngleInput.value = chip.dataset.angle;
+      });
+    });
+
+    locationInput.addEventListener('input', () => {
+      updateChips('location', locationInput, locationChips);
+      updateContextSummary();
+    });
     gradeInput.addEventListener('input', () => updateChips('grade', gradeInput, gradeChips));
 
-    outcomeChips.forEach(chip => {
-      chip.addEventListener('click', () => handleOutcomeSelect(chip.dataset.outcome));
+    customOutcomeInput.addEventListener('input', () => {
+      const val = customOutcomeInput.value.trim();
+      if (val.length > 0) {
+        categorySelectorRow.style.display = 'flex';
+      } else {
+        categorySelectorRow.style.display = 'none';
+        selectedCustomCategory = null;
+        catBtns.forEach(b => b.className = 'cat-btn');
+      }
+    });
+
+    catBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        catBtns.forEach(b => b.className = 'cat-btn');
+        const cat = btn.dataset.cat;
+        selectedCustomCategory = cat;
+        if (cat === 'success') btn.className = 'cat-btn selected-success';
+        if (cat === 'failure') btn.className = 'cat-btn selected-failure';
+        if (cat === 'skip') btn.className = 'cat-btn selected-skip';
+      });
+    });
+
+    saveCustomOutcomeBtn.addEventListener('click', () => {
+      const outcomeText = customOutcomeInput.value.trim().toLowerCase();
+      if (!outcomeText) {
+        alert('Please enter an outcome name.');
+        return;
+      }
+      if (!selectedCustomCategory) {
+        alert('Please select whether this outcome is a Success, Failure, or Skip.');
+        return;
+      }
+
+      if (!outcomes.some(o => o.name.toLowerCase() === outcomeText)) {
+        outcomes.push({ name: outcomeText, category: selectedCustomCategory });
+        saveData();
+      }
+
+      handleOutcomeSelect(outcomeText);
     });
 
     deleteBtn.addEventListener('click', () => {
       if (editingId) {
         history = history.filter(item => item.id !== editingId);
-        saveHistory();
+        saveData();
         renderHistory();
         closeModal();
       }
     });
 
-    loadHistory();
+    loadData();
     renderHistory();
   </script>
 </body>
