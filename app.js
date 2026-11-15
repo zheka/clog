@@ -189,9 +189,9 @@ function renderHistory() {
     const kind = entry.kind || 'bouldering';
     
     const dateObj = new Date(entry.loggedAt);
-    const dateStr = dateObj.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+    const dateStr = dateObj.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
     
-    // Group by location, kind, AND date
+    // Group by location, kind, and date (excluding year)
     const groupKey = `${loc}___${kind}___${dateStr}`;
 
     if (!currentGroup || currentGroup.key !== groupKey) {
