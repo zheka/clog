@@ -187,13 +187,19 @@ function renderHistory() {
   reversedHistory.forEach(entry => {
     const loc = entry.location || 'Unknown Location';
     const kind = entry.kind || 'bouldering';
-    const groupKey = `${loc}___${kind}`;
+    
+    const dateObj = new Date(entry.loggedAt);
+    const dateStr = dateObj.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+    
+    // Group by location, kind, AND date
+    const groupKey = `${loc}___${kind}___${dateStr}`;
 
     if (!currentGroup || currentGroup.key !== groupKey) {
       currentGroup = {
         key: groupKey,
         location: loc,
         kind: kind,
+        dateString: dateStr,
         entries: []
       };
       groups.push(currentGroup);
@@ -214,7 +220,7 @@ function renderHistory() {
     headerEl.innerHTML = `
       <div class="group-header-left">
         <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
-        <span>${escapeHtml(group.location)} &bull; ${group.kind}</span>
+        <span>${escapeHtml(group.location)} &bull; ${group.kind} &bull; <span style="font-weight: 400; opacity: 0.85;">${group.dateString}</span></span>
       </div>
       <svg class="group-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"></polyline></svg>
     `;
@@ -233,9 +239,7 @@ function renderHistory() {
       card.dataset.entryId = entry.id;
 
       const dateObj = new Date(entry.loggedAt);
-      const dateStr = dateObj.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
       const timeStr = dateObj.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: false });
-      const dateTimeDisplay = `${dateStr}, ${timeStr}`;
 
       const cat = getCategoryForOutcome(entry.outcome);
       let badgeClass = 'entry-status-gray';
@@ -245,7 +249,7 @@ function renderHistory() {
       let cardHtml = `
         <div class="entry-main-row">
           <div class="entry-left">
-            <span class="entry-time">${dateTimeDisplay}</span>
+            <span class="entry-time">${timeStr}</span>
             <span class="grade-badge">${escapeHtml(entry.grade)}</span>
             <span class="entry-status-badge ${badgeClass}">${escapeHtml(entry.outcome)}</span>
           </div>
