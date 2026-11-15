@@ -1,8 +1,11 @@
-let history = [];
-let outcomes = []; // Array of { name, category }
-let editingId = null;
-let selectedKind = 'bouldering';
-let selectedCustomCategory = null;
+import { exportToJSON, generateId, loadData, parseBackup, saveData } from './storage';
+import type { Attempt, Category, Kind, Outcome } from './types';
+
+let history: Attempt[] = [];
+let outcomes: Outcome[] = [];
+let editingId: string | null = null;
+let selectedKind: Kind = 'bouldering';
+let selectedCustomCategory: Category | null = null;
 
 const historyList = document.getElementById('historyList');
 const openModalBtn = document.getElementById('openModalBtn');
@@ -16,30 +19,30 @@ const closeMenuModalBtn = document.getElementById('closeMenuModalBtn');
 const menuModalOverlay = document.getElementById('menuModalOverlay');
 const exportJsonBtn = document.getElementById('exportJsonBtn');
 const importJsonBtn = document.getElementById('importJsonBtn');
-const importFileInput = document.getElementById('importFileInput');
+const importFileInput = document.getElementById('importFileInput') as HTMLInputElement;
 
 const contextHeader = document.getElementById('contextHeader');
 const contextBody = document.getElementById('contextBody');
 const contextSummaryText = document.getElementById('contextSummaryText');
 const contextToggleLink = document.getElementById('contextToggleLink');
 
-const kindTabs = document.querySelectorAll('.kind-tab');
+const kindTabs = document.querySelectorAll<HTMLElement>('.kind-tab');
 const boardAngleGroup = document.getElementById('boardAngleGroup');
-const boardAngleInput = document.getElementById('boardAngleInput');
-const angleChips = document.querySelectorAll('#angleChips .chip-small');
+const boardAngleInput = document.getElementById('boardAngleInput') as HTMLInputElement;
+const angleChips = document.querySelectorAll<HTMLElement>('#angleChips .chip-small');
 
-const locationInput = document.getElementById('locationInput');
-const gradeInput = document.getElementById('gradeInput');
+const locationInput = document.getElementById('locationInput') as HTMLInputElement;
+const gradeInput = document.getElementById('gradeInput') as HTMLInputElement;
 const locationChips = document.getElementById('locationChips');
 const gradeChips = document.getElementById('gradeChips');
 const frequentOutcomesRow = document.getElementById('frequentOutcomesRow');
 
-const customOutcomeInput = document.getElementById('customOutcomeInput');
+const customOutcomeInput = document.getElementById('customOutcomeInput') as HTMLInputElement;
 const categorySelectorRow = document.getElementById('categorySelectorRow');
-const catBtns = document.querySelectorAll('.cat-btn');
+const catBtns = document.querySelectorAll<HTMLElement>('.cat-btn');
 const saveCustomOutcomeBtn = document.getElementById('saveCustomOutcomeBtn');
 
-function getCategoryForOutcome(outcomeName) {
+function getCategoryForOutcome(outcomeName: string): Category {
   const lower = outcomeName.toLowerCase().trim();
   const found = outcomes.find(o => o.name.toLowerCase() === lower);
   if (found) return found.category;
@@ -58,7 +61,7 @@ function updateOutcomesDatalist() {
   });
 }
 
-function resolveExistingCasing(fieldKey, typedValue) {
+function resolveExistingCasing(fieldKey: 'location' | 'grade', typedValue: string): string {
   const trimmed = typedValue.trim();
   if (!trimmed) return '';
   for (let i = history.length - 1; i >= 0; i--) {
@@ -70,7 +73,7 @@ function resolveExistingCasing(fieldKey, typedValue) {
   return trimmed;
 }
 
-function setKind(kind) {
+function setKind(kind: Kind) {
   selectedKind = kind;
   kindTabs.forEach(tab => {
     if (tab.dataset.kind === kind) {
@@ -94,9 +97,9 @@ function updateContextSummary() {
 }
 
 // Recency-based chips: latest used outcomes appear first
-function getFrequentOutcomes() {
-  const recentList = [];
-  
+function getFrequentOutcomes(): string[] {
+  const recentList: string[] = [];
+
   // 1. Gather outcomes from history in reverse chronological order (most recent first)
   for (let i = history.length - 1; i >= 0; i--) {
     const out = history[i].outcome;
@@ -123,7 +126,7 @@ function renderFrequentOutcomes() {
   freqs.forEach(outcome => {
     const cat = getCategoryForOutcome(outcome);
     const chip = document.createElement('span');
-    
+
     // Highlight the last used outcome as preselected
     if (lastOutcome && lastOutcome.toLowerCase() === outcome.toLowerCase()) {
       chip.className = `chip ${cat}`;
@@ -138,10 +141,10 @@ function renderFrequentOutcomes() {
   });
 }
 
-function getAutocompleteValues(fieldKey, filterText = '') {
+function getAutocompleteValues(fieldKey: 'location' | 'grade' | 'outcome', filterText = ''): string[] {
   const query = filterText.trim().toLowerCase();
-  const matching = [];
-  const recent = [];
+  const matching: string[] = [];
+  const recent: string[] = [];
 
   if (fieldKey === 'outcome') {
     outcomes.forEach(o => {
@@ -187,7 +190,7 @@ function getAutocompleteValues(fieldKey, filterText = '') {
   return results.slice(0, 3);
 }
 
-function updateChips(fieldKey, inputElem, containerElem) {
+function updateChips(fieldKey: 'location' | 'grade', inputElem: HTMLInputElement, containerElem: HTMLElement) {
   containerElem.innerHTML = '';
   const items = getAutocompleteValues(fieldKey, inputElem.value);
   items.forEach(text => {
@@ -203,6 +206,14 @@ function updateChips(fieldKey, inputElem, containerElem) {
   });
 }
 
+interface HistoryGroup {
+  key: string;
+  location: string;
+  kind: Kind;
+  dateString: string;
+  entries: Attempt[];
+}
+
 function renderHistory() {
   historyList.innerHTML = '';
   if (history.length === 0) {
@@ -211,16 +222,16 @@ function renderHistory() {
   }
 
   const reversedHistory = [...history].reverse();
-  const groups = [];
-  let currentGroup = null;
+  const groups: HistoryGroup[] = [];
+  let currentGroup: HistoryGroup | null = null;
 
   reversedHistory.forEach(entry => {
     const loc = entry.location || 'Unknown Location';
     const kind = entry.kind || 'bouldering';
-    
+
     const dateObj = new Date(entry.loggedAt);
     const dateStr = dateObj.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-    
+
     const groupKey = `${loc}___${kind}___${dateStr}`;
 
     if (!currentGroup || currentGroup.key !== groupKey) {
@@ -253,7 +264,7 @@ function renderHistory() {
       </div>
       <svg class="group-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"></polyline></svg>
     `;
-    
+
     headerEl.addEventListener('click', () => {
       groupEl.classList.toggle('collapsed');
     });
@@ -310,7 +321,7 @@ function renderHistory() {
   });
 }
 
-function escapeHtml(str) {
+function escapeHtml(str: string): string {
   return (str || '').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
@@ -327,14 +338,14 @@ function openModal() {
   locationInput.value = lastEntry ? lastEntry.location || '' : '';
   gradeInput.value = lastEntry ? lastEntry.grade || '' : '';
   if (lastEntry && lastEntry.kind === 'kilterboard' && lastEntry.boardAngle) {
-    boardAngleInput.value = lastEntry.boardAngle;
+    boardAngleInput.value = String(lastEntry.boardAngle);
   } else {
     boardAngleInput.value = '';
   }
 
   let shouldExpandContext = true;
   if (lastEntry && lastEntry.loggedAt) {
-    const diffHours = (new Date() - new Date(lastEntry.loggedAt)) / (1000 * 60 * 60);
+    const diffHours = (Date.now() - new Date(lastEntry.loggedAt).getTime()) / (1000 * 60 * 60);
     if (diffHours < 2) {
       shouldExpandContext = false;
     }
@@ -362,7 +373,7 @@ function openModal() {
   modalOverlay.classList.add('active');
 }
 
-function openModalForEdit(id) {
+function openModalForEdit(id: string) {
   const entry = history.find(item => item.id === id);
   if (!entry) return;
 
@@ -374,7 +385,7 @@ function openModalForEdit(id) {
   locationInput.value = entry.location || '';
   gradeInput.value = entry.grade || '';
   if (entry.kind === 'kilterboard' && entry.boardAngle !== undefined) {
-    boardAngleInput.value = entry.boardAngle;
+    boardAngleInput.value = String(entry.boardAngle);
   } else {
     boardAngleInput.value = '';
   }
@@ -401,7 +412,7 @@ function closeModal() {
   editingId = null;
 }
 
-function handleOutcomeSelect(chosenOutcome) {
+function handleOutcomeSelect(chosenOutcome: string) {
   const locVal = resolveExistingCasing('location', locationInput.value);
   const gradeVal = resolveExistingCasing('grade', gradeInput.value);
 
@@ -410,7 +421,7 @@ function handleOutcomeSelect(chosenOutcome) {
     return;
   }
 
-  let angleVal = null;
+  let angleVal: number | null = null;
   if (selectedKind === 'kilterboard') {
     const parsedAngle = Number(boardAngleInput.value);
     if (!isNaN(parsedAngle) && boardAngleInput.value.trim() !== '') {
@@ -418,7 +429,6 @@ function handleOutcomeSelect(chosenOutcome) {
     }
   }
 
-  let targetId = editingId;
   const isEditing = Boolean(editingId);
 
   if (isEditing) {
@@ -435,9 +445,8 @@ function handleOutcomeSelect(chosenOutcome) {
       }
     }
   } else {
-    targetId = generateId();
-    const newEntry = {
-      id: targetId,
+    const newEntry: Attempt = {
+      id: generateId(),
       loggedAt: new Date().toISOString(),
       kind: selectedKind,
       location: locVal,
@@ -450,9 +459,50 @@ function handleOutcomeSelect(chosenOutcome) {
     history.push(newEntry);
   }
 
-  saveData();
+  saveData(history, outcomes);
   renderHistory();
   closeModal();
+}
+
+function handleJSONImport(event: Event) {
+  const file = (event.target as HTMLInputElement).files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function (e) {
+    try {
+      const backup = parseBackup(e.target.result as string);
+
+      if (backup.attempts.length === 0) {
+        alert('No valid climbing attempts found in the selected file.');
+        return;
+      }
+
+      if (history.length > 0) {
+        const confirmReplace = confirm(`Importing this backup will completely REPLACE your existing ${history.length} local entries with the ${backup.attempts.length} entries from the file.\n\nProceed?`);
+        if (!confirmReplace) {
+          importFileInput.value = '';
+          return;
+        }
+      }
+
+      if (backup.outcomes) {
+        outcomes = backup.outcomes;
+      }
+      history = backup.attempts;
+
+      saveData(history, outcomes);
+      renderHistory();
+      updateOutcomesDatalist();
+      closeMenuModal();
+      alert(`Successfully imported ${backup.attempts.length} attempts.`);
+    } catch (err) {
+      alert('Failed to import JSON file: ' + err.message);
+    } finally {
+      importFileInput.value = '';
+    }
+  };
+  reader.readAsText(file);
 }
 
 contextHeader.addEventListener('click', () => {
@@ -468,13 +518,15 @@ openMenuBtn.addEventListener('click', openMenuModal);
 closeMenuModalBtn.addEventListener('click', closeMenuModal);
 menuModalOverlay.addEventListener('click', (e) => { if (e.target === menuModalOverlay) closeMenuModal(); });
 
-exportJsonBtn.addEventListener('click', exportToJSON);
+exportJsonBtn.addEventListener('click', () => {
+  if (exportToJSON(history, outcomes)) closeMenuModal();
+});
 importJsonBtn.addEventListener('click', () => importFileInput.click());
 importFileInput.addEventListener('change', handleJSONImport);
 
 kindTabs.forEach(tab => {
   tab.addEventListener('click', () => {
-    setKind(tab.dataset.kind);
+    setKind(tab.dataset.kind as Kind);
   });
 });
 
@@ -504,7 +556,7 @@ customOutcomeInput.addEventListener('input', () => {
 catBtns.forEach(btn => {
   btn.addEventListener('click', () => {
     catBtns.forEach(b => b.className = 'cat-btn');
-    const cat = btn.dataset.cat;
+    const cat = btn.dataset.cat as Category;
     selectedCustomCategory = cat;
     if (cat === 'success') btn.className = 'cat-btn selected-success';
     if (cat === 'failure') btn.className = 'cat-btn selected-failure';
@@ -529,7 +581,7 @@ saveCustomOutcomeBtn.addEventListener('click', () => {
   }
 
   // 2. Persist immediately to localStorage
-  saveData();
+  saveData(history, outcomes);
 
   // 3. Update datalist hints and chips instantly
   updateOutcomesDatalist();
@@ -542,11 +594,11 @@ saveCustomOutcomeBtn.addEventListener('click', () => {
 deleteBtn.addEventListener('click', () => {
   if (editingId) {
     history = history.filter(item => item.id !== editingId);
-    saveData();
+    saveData(history, outcomes);
     renderHistory();
     closeModal();
   }
 });
 
-loadData();
+({ history, outcomes } = loadData());
 renderHistory();
