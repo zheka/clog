@@ -366,6 +366,26 @@ describe('custom outcomes', () => {
     expect($('outcomes-list').querySelectorAll('option')).toHaveLength(4);
   });
 
+  it('keeps expanded history groups when registering an outcome fails to log', async () => {
+    await start([attempt({ id: 'old', location: 'Old Gym' }), attempt({ id: 'new' })]);
+    const oldGroup = () => q('[data-entry-id="old"]').closest('.group-container')!;
+    q('.group-header', oldGroup()).click();
+    expect(oldGroup().classList.contains('collapsed')).toBe(false);
+
+    $('openModalBtn').click();
+    type('gradeInput', '');
+    type('customOutcomeInput', 'new one');
+    q('.cat-btn[data-cat="success"]').click();
+    $('saveCustomOutcomeBtn').click();
+
+    expect(alertMock).toHaveBeenCalledWith(
+      'Please fill in both Location and Grade before selecting an outcome.',
+    );
+    expect(storedOutcomes()).toContainEqual({ name: 'new one', category: 'success' });
+    expect(texts('#frequentOutcomesRow .chip')).toContain('new one');
+    expect(oldGroup().classList.contains('collapsed')).toBe(false);
+  });
+
   it('does not duplicate an existing outcome or change its category', async () => {
     await start([attempt()]);
     $('openModalBtn').click();

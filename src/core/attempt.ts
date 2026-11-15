@@ -62,3 +62,28 @@ export function unwrapAttempts(parsed: unknown): unknown[] {
   const obj = parsed as { attempts?: unknown[]; entries?: unknown[] };
   return obj.attempts || obj.entries || [];
 }
+
+/** What the entry form provides when logging or editing an attempt. */
+export interface AttemptInput {
+  kind: Kind;
+  location: string;
+  grade: string;
+  outcome: string;
+  /** Only stored for kilterboard; null = not set. */
+  boardAngle: number | null;
+}
+
+export function createAttempt(input: AttemptInput, now = new Date()): Attempt {
+  const { kind, location, grade, outcome } = input;
+  const base = { id: generateId(), loggedAt: now.toISOString(), kind, location, grade, outcome };
+  return withChanges(base, input);
+}
+
+/** The attempt with the form's fields applied (id and time unchanged). */
+export function withChanges(attempt: Attempt, input: AttemptInput): Attempt {
+  const { kind, location, grade, outcome, boardAngle } = input;
+  const updated: Attempt = { ...attempt, kind, location, grade, outcome };
+  delete updated.boardAngle;
+  if (kind === 'kilterboard' && boardAngle !== null) updated.boardAngle = boardAngle;
+  return updated;
+}

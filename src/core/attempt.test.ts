@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
+  createAttempt,
   generateId,
   isCompleteAttempt,
   normalizeAttempt,
   sortByTime,
   unwrapAttempts,
+  withChanges,
 } from './attempt';
 import { makeAttempt } from './test-helpers';
 
@@ -83,5 +85,32 @@ describe('sortByTime', () => {
     const input = [b, a];
     expect(sortByTime(input)).toEqual([a, b]);
     expect(input).toEqual([b, a]);
+  });
+});
+
+describe('createAttempt / withChanges', () => {
+  const input = {
+    kind: 'kilterboard' as const,
+    location: 'Gym',
+    grade: 'v5',
+    outcome: 'flash',
+    boardAngle: 40,
+  };
+
+  it('creates an attempt stamped with the given time', () => {
+    const now = new Date('2026-11-15T12:00:00Z');
+    expect(createAttempt(input, now)).toEqual({
+      id: expect.any(String),
+      loggedAt: '2026-11-15T12:00:00.000Z',
+      ...input,
+    });
+  });
+
+  it('applies changes, dropping the angle when not kilterboard or not set', () => {
+    const a = makeAttempt({ kind: 'kilterboard', boardAngle: 30 });
+    expect(withChanges(a, input)).toEqual({ ...a, ...input });
+    expect(withChanges(a, { ...input, boardAngle: null })).not.toHaveProperty('boardAngle');
+    expect(withChanges(a, { ...input, kind: 'route' })).not.toHaveProperty('boardAngle');
+    expect(a.boardAngle).toBe(30);
   });
 });
