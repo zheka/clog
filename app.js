@@ -93,29 +93,45 @@ function updateContextSummary() {
   contextSummaryText.textContent = `${loc} • ${selectedKind}`;
 }
 
+// Recency-based chips: latest used outcomes appear first
 function getFrequentOutcomes() {
-  const counts = {};
-  history.forEach(item => {
-    const out = item.outcome;
-    counts[out] = (counts[out] || 0) + 1;
-  });
-  const defaults = ['flash', 'sent', 'grip out', 'foot off', 'working'];
-  const sorted = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
+  const recentList = [];
   
-  const combined = [...sorted];
-  defaults.forEach(d => {
-    if (!combined.includes(d)) combined.push(d);
+  // 1. Gather outcomes from history in reverse chronological order (most recent first)
+  for (let i = history.length - 1; i >= 0; i--) {
+    const out = history[i].outcome;
+    if (out && !recentList.some(r => r.toLowerCase() === out.toLowerCase())) {
+      recentList.push(out);
+    }
+  }
+
+  // 2. Append any remaining registered outcomes that haven't been used yet
+  outcomes.forEach(o => {
+    if (!recentList.some(r => r.toLowerCase() === o.name.toLowerCase())) {
+      recentList.push(o.name);
+    }
   });
-  return combined.slice(0, 5);
+
+  return recentList.slice(0, 8); // Top 8 recent outcomes
 }
 
 function renderFrequentOutcomes() {
   frequentOutcomesRow.innerHTML = '';
   const freqs = getFrequentOutcomes();
+  const lastOutcome = history.length > 0 ? history[history.length - 1].outcome : null;
+
   freqs.forEach(outcome => {
     const cat = getCategoryForOutcome(outcome);
     const chip = document.createElement('span');
-    chip.className = `chip ${cat}`;
+    
+    // Highlight the last used outcome as preselected
+    if (lastOutcome && lastOutcome.toLowerCase() === outcome.toLowerCase()) {
+      chip.className = `chip ${cat}`;
+      chip.style.outline = '2px solid var(--text)';
+    } else {
+      chip.className = `chip ${cat}`;
+    }
+
     chip.textContent = outcome;
     chip.addEventListener('click', () => handleOutcomeSelect(outcome));
     frequentOutcomesRow.appendChild(chip);
@@ -126,6 +142,20 @@ function getAutocompleteValues(fieldKey, filterText = '') {
   const query = filterText.trim().toLowerCase();
   const matching = [];
   const recent = [];
+
+  if (fieldKey === 'outcome') {
+    outcomes.forEach(o => {
+      const trimmed = o.name.trim();
+      if (trimmed.length > 0) {
+        if (query === '' || trimmed.toLowerCase().includes(query)) {
+          if (!matching.some(m => m.toLowerCase() === trimmed.toLowerCase())) {
+            matching.push(trimmed);
+          }
+        }
+      }
+    });
+    return matching.slice(0, 5);
+  }
 
   for (let i = history.length - 1; i >= 0; i--) {
     if (editingId && history[i].id === editingId) continue;
@@ -191,7 +221,6 @@ function renderHistory() {
     const dateObj = new Date(entry.loggedAt);
     const dateStr = dateObj.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
     
-    // Group by location, kind, and date (excluding year)
     const groupKey = `${loc}___${kind}___${dateStr}`;
 
     if (!currentGroup || currentGroup.key !== groupKey) {
@@ -494,11 +523,19 @@ saveCustomOutcomeBtn.addEventListener('click', () => {
     return;
   }
 
+  // 1. Add to outcomes registry if not already present
   if (!outcomes.some(o => o.name.toLowerCase() === outcomeText)) {
     outcomes.push({ name: outcomeText, category: selectedCustomCategory });
-    saveData();
   }
 
+  // 2. Persist immediately to localStorage
+  saveData();
+
+  // 3. Update datalist hints and chips instantly
+  updateOutcomesDatalist();
+  renderFrequentOutcomes();
+
+  // 4. Log the attempt
   handleOutcomeSelect(outcomeText);
 });
 
