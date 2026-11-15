@@ -123,7 +123,7 @@ describe('loading and history list', () => {
     ]);
     // only the newest group starts expanded; header click toggles
     expect(groups.map((g) => g.classList.contains('collapsed'))).toEqual([false, true, true]);
-    (q('.group-header', groups[1]) as HTMLElement).click();
+    q('.group-header', groups[1]).click();
     expect(groups[1].classList.contains('collapsed')).toBe(false);
   });
 
@@ -210,7 +210,7 @@ describe('new entry modal', () => {
     expect($('contextToggleLink').textContent).toBe('Hide');
     type('locationInput', 'New Gym');
     expect($('contextSummaryText').textContent).toBe('New Gym • bouldering');
-    ($('contextBody').querySelector('[data-kind="route"]') as HTMLElement).click();
+    q('[data-kind="route"]', $('contextBody')).click();
     expect($('contextSummaryText').textContent).toBe('New Gym • route');
     expect($('boardAngleGroup').style.display).toBe('none');
   });
@@ -252,7 +252,7 @@ describe('new entry modal', () => {
   it('fills the angle from angle chips', async () => {
     await start([attempt({ kind: 'kilterboard' })]);
     $('openModalBtn').click();
-    (q('#angleChips [data-angle="45"]') as HTMLElement).click();
+    q('#angleChips [data-angle="45"]').click();
     expect($<HTMLInputElement>('boardAngleInput').value).toBe('45');
   });
 
@@ -334,7 +334,7 @@ describe('custom outcomes', () => {
     expect($('categorySelectorRow').style.display).toBe('none');
     type('customOutcomeInput', 'x');
     expect($('categorySelectorRow').style.display).toBe('flex');
-    (q('.cat-btn[data-cat="skip"]') as HTMLElement).click();
+    q('.cat-btn[data-cat="skip"]').click();
     expect(q('.cat-btn[data-cat="skip"]').className).toBe('cat-btn selected-skip');
     type('customOutcomeInput', '');
     expect($('categorySelectorRow').style.display).toBe('none');
@@ -358,7 +358,7 @@ describe('custom outcomes', () => {
     await start([attempt()]);
     $('openModalBtn').click();
     type('customOutcomeInput', '  Fell At Crux ');
-    (q('.cat-btn[data-cat="failure"]') as HTMLElement).click();
+    q('.cat-btn[data-cat="failure"]').click();
     $('saveCustomOutcomeBtn').click();
     expect(storedOutcomes()).toContainEqual({ name: 'fell at crux', category: 'failure' });
     expect(stored()[1]).toMatchObject({ outcome: 'fell at crux', location: 'BW Ost' });
@@ -390,7 +390,7 @@ describe('custom outcomes', () => {
     await start([attempt()]);
     $('openModalBtn').click();
     type('customOutcomeInput', 'FLASH');
-    (q('.cat-btn[data-cat="failure"]') as HTMLElement).click();
+    q('.cat-btn[data-cat="failure"]').click();
     $('saveCustomOutcomeBtn').click();
     expect(storedOutcomes()).toEqual(OUTCOMES);
     expect(stored()[1].outcome).toBe('flash');
@@ -411,7 +411,7 @@ describe('editing and deleting', () => {
     attempt({ id: 'a2', loggedAt: '2026-11-14T13:00:00Z', grade: 'v4' }),
   ];
 
-  const edit = (id: string) => (q(`[data-entry-id="${id}"] .edit-btn`) as HTMLElement).click();
+  const edit = (id: string) => q(`[data-entry-id="${id}"] .edit-btn`).click();
 
   it('opens the entry for editing', async () => {
     await start(data());
@@ -446,7 +446,7 @@ describe('editing and deleting', () => {
   it('drops the board angle when the kind changes', async () => {
     await start(data());
     edit('a1');
-    (q('.kind-tab[data-kind="route"]') as HTMLElement).click();
+    q('.kind-tab[data-kind="route"]').click();
     clickChip('frequentOutcomesRow', 'flash');
     expect(stored()[0].kind).toBe('route');
     expect(stored()[0]).not.toHaveProperty('boardAngle');
