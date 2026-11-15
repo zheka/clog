@@ -1,0 +1,511 @@
+let history = [];
+let outcomes = []; // Array of { name, category }
+let editingId = null;
+let selectedKind = 'bouldering';
+let selectedCustomCategory = null;
+
+const historyList = document.getElementById('historyList');
+const openModalBtn = document.getElementById('openModalBtn');
+const closeModalBtn = document.getElementById('closeModalBtn');
+const modalOverlay = document.getElementById('modalOverlay');
+const modalTitle = document.getElementById('modalTitle');
+const deleteBtn = document.getElementById('deleteBtn');
+
+const openMenuBtn = document.getElementById('openMenuBtn');
+const closeMenuModalBtn = document.getElementById('closeMenuModalBtn');
+const menuModalOverlay = document.getElementById('menuModalOverlay');
+const exportJsonBtn = document.getElementById('exportJsonBtn');
+const importJsonBtn = document.getElementById('importJsonBtn');
+const importFileInput = document.getElementById('importFileInput');
+
+const contextHeader = document.getElementById('contextHeader');
+const contextBody = document.getElementById('contextBody');
+const contextSummaryText = document.getElementById('contextSummaryText');
+const contextToggleLink = document.getElementById('contextToggleLink');
+
+const kindTabs = document.querySelectorAll('.kind-tab');
+const boardAngleGroup = document.getElementById('boardAngleGroup');
+const boardAngleInput = document.getElementById('boardAngleInput');
+const angleChips = document.querySelectorAll('#angleChips .chip-small');
+
+const locationInput = document.getElementById('locationInput');
+const gradeInput = document.getElementById('gradeInput');
+const locationChips = document.getElementById('locationChips');
+const gradeChips = document.getElementById('gradeChips');
+const frequentOutcomesRow = document.getElementById('frequentOutcomesRow');
+
+const customOutcomeInput = document.getElementById('customOutcomeInput');
+const categorySelectorRow = document.getElementById('categorySelectorRow');
+const catBtns = document.querySelectorAll('.cat-btn');
+const saveCustomOutcomeBtn = document.getElementById('saveCustomOutcomeBtn');
+
+function getCategoryForOutcome(outcomeName) {
+  const lower = outcomeName.toLowerCase().trim();
+  const found = outcomes.find(o => o.name.toLowerCase() === lower);
+  if (found) return found.category;
+  return 'failure'; // fallback
+}
+
+function updateOutcomesDatalist() {
+  const dl = document.getElementById('outcomes-list');
+  if (!dl) return;
+  dl.innerHTML = '';
+  const sortedOutcomes = [...outcomes].sort((a, b) => a.name.localeCompare(b.name));
+  sortedOutcomes.forEach(o => {
+    const opt = document.createElement('option');
+    opt.value = o.name;
+    dl.appendChild(opt);
+  });
+}
+
+function resolveExistingCasing(fieldKey, typedValue) {
+  const trimmed = typedValue.trim();
+  if (!trimmed) return '';
+  for (let i = history.length - 1; i >= 0; i--) {
+    const val = history[i][fieldKey];
+    if (val && typeof val === 'string' && val.trim().toLowerCase() === typedValue.trim().toLowerCase()) {
+      return val.trim();
+    }
+  }
+  return trimmed;
+}
+
+function setKind(kind) {
+  selectedKind = kind;
+  kindTabs.forEach(tab => {
+    if (tab.dataset.kind === kind) {
+      tab.classList.add('active');
+    } else {
+      tab.classList.remove('active');
+    }
+  });
+  if (kind === 'kilterboard') {
+    boardAngleGroup.style.display = 'flex';
+  } else {
+    boardAngleGroup.style.display = 'none';
+    boardAngleInput.value = '';
+  }
+  updateContextSummary();
+}
+
+function updateContextSummary() {
+  const loc = locationInput.value.trim() || 'Unknown Location';
+  contextSummaryText.textContent = `${loc} • ${selectedKind}`;
+}
+
+function getFrequentOutcomes() {
+  const counts = {};
+  history.forEach(item => {
+    const out = item.outcome;
+    counts[out] = (counts[out] || 0) + 1;
+  });
+  const defaults = ['flash', 'sent', 'grip out', 'foot off', 'working'];
+  const sorted = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
+  
+  const combined = [...sorted];
+  defaults.forEach(d => {
+    if (!combined.includes(d)) combined.push(d);
+  });
+  return combined.slice(0, 5);
+}
+
+function renderFrequentOutcomes() {
+  frequentOutcomesRow.innerHTML = '';
+  const freqs = getFrequentOutcomes();
+  freqs.forEach(outcome => {
+    const cat = getCategoryForOutcome(outcome);
+    const chip = document.createElement('span');
+    chip.className = `chip ${cat}`;
+    chip.textContent = outcome;
+    chip.addEventListener('click', () => handleOutcomeSelect(outcome));
+    frequentOutcomesRow.appendChild(chip);
+  });
+}
+
+function getAutocompleteValues(fieldKey, filterText = '') {
+  const query = filterText.trim().toLowerCase();
+  const matching = [];
+  const recent = [];
+
+  for (let i = history.length - 1; i >= 0; i--) {
+    if (editingId && history[i].id === editingId) continue;
+    const val = history[i][fieldKey];
+    if (val && typeof val === 'string') {
+      const trimmed = val.trim();
+      if (trimmed.length > 0 && !recent.some(r => r.toLowerCase() === trimmed.toLowerCase())) {
+        recent.push(trimmed);
+      }
+    }
+  }
+
+  recent.forEach(trimmed => {
+    if (query === '' || trimmed.toLowerCase().includes(query)) {
+      if (!matching.some(m => m.toLowerCase() === trimmed.toLowerCase())) {
+        matching.push(trimmed);
+      }
+    }
+  });
+
+  const results = [...matching];
+  for (let i = 0; i < recent.length && results.length < 3; i++) {
+    const item = recent[i];
+    if (!results.some(r => r.toLowerCase() === item.toLowerCase())) {
+      results.push(item);
+    }
+  }
+
+  return results.slice(0, 3);
+}
+
+function updateChips(fieldKey, inputElem, containerElem) {
+  containerElem.innerHTML = '';
+  const items = getAutocompleteValues(fieldKey, inputElem.value);
+  items.forEach(text => {
+    const chip = document.createElement('span');
+    chip.className = 'chip-small';
+    chip.textContent = text;
+    chip.addEventListener('click', () => {
+      inputElem.value = text;
+      updateChips(fieldKey, inputElem, containerElem);
+      updateContextSummary();
+    });
+    containerElem.appendChild(chip);
+  });
+}
+
+function renderHistory() {
+  historyList.innerHTML = '';
+  if (history.length === 0) {
+    historyList.innerHTML = '<div class="empty-state">No attempts logged yet.<br>Tap + to add your first attempt!</div>';
+    return;
+  }
+
+  const reversedHistory = [...history].reverse();
+  const groups = [];
+  let currentGroup = null;
+
+  reversedHistory.forEach(entry => {
+    const loc = entry.location || 'Unknown Location';
+    const kind = entry.kind || 'bouldering';
+    const groupKey = `${loc}___${kind}`;
+
+    if (!currentGroup || currentGroup.key !== groupKey) {
+      currentGroup = {
+        key: groupKey,
+        location: loc,
+        kind: kind,
+        entries: []
+      };
+      groups.push(currentGroup);
+    }
+    currentGroup.entries.push(entry);
+  });
+
+  groups.forEach((group, index) => {
+    const groupEl = document.createElement('div');
+    groupEl.className = 'group-container';
+    const isCollapsed = index !== 0;
+    if (isCollapsed) {
+      groupEl.classList.add('collapsed');
+    }
+
+    const headerEl = document.createElement('div');
+    headerEl.className = 'group-header';
+    headerEl.innerHTML = `
+      <div class="group-header-left">
+        <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+        <span>${escapeHtml(group.location)} &bull; ${group.kind}</span>
+      </div>
+      <svg class="group-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"></polyline></svg>
+    `;
+    
+    headerEl.addEventListener('click', () => {
+      groupEl.classList.toggle('collapsed');
+    });
+    groupEl.appendChild(headerEl);
+
+    const bodyEl = document.createElement('div');
+    bodyEl.className = 'group-body';
+
+    group.entries.forEach(entry => {
+      const card = document.createElement('div');
+      card.className = 'entry-card';
+      card.dataset.entryId = entry.id;
+
+      const dateObj = new Date(entry.loggedAt);
+      const dateStr = dateObj.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+      const timeStr = dateObj.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: false });
+      const dateTimeDisplay = `${dateStr}, ${timeStr}`;
+
+      const cat = getCategoryForOutcome(entry.outcome);
+      let badgeClass = 'entry-status-gray';
+      if (cat === 'success') badgeClass = 'entry-status-green';
+      if (cat === 'failure') badgeClass = 'entry-status-red';
+
+      let cardHtml = `
+        <div class="entry-main-row">
+          <div class="entry-left">
+            <span class="entry-time">${dateTimeDisplay}</span>
+            <span class="grade-badge">${escapeHtml(entry.grade)}</span>
+            <span class="entry-status-badge ${badgeClass}">${escapeHtml(entry.outcome)}</span>
+          </div>
+          <div class="entry-right">
+            <button type="button" class="edit-btn" data-id="${entry.id}">Edit</button>
+          </div>
+        </div>
+      `;
+
+      let detailsHtml = '';
+      if (entry.kind === 'kilterboard' && entry.boardAngle !== undefined && entry.boardAngle !== null) {
+        detailsHtml += `<span class="detail-tag">Angle: ${entry.boardAngle}&deg;</span>`;
+      }
+
+      if (detailsHtml) {
+        cardHtml += `<div class="entry-details-row">${detailsHtml}</div>`;
+      }
+
+      card.innerHTML = cardHtml;
+      card.querySelector('.edit-btn').addEventListener('click', () => {
+        openModalForEdit(entry.id);
+      });
+
+      bodyEl.appendChild(card);
+    });
+
+    groupEl.appendChild(bodyEl);
+    historyList.appendChild(groupEl);
+  });
+}
+
+function escapeHtml(str) {
+  return (str || '').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+function openMenuModal() { menuModalOverlay.classList.add('active'); }
+function closeMenuModal() { menuModalOverlay.classList.remove('active'); }
+
+function openModal() {
+  editingId = null;
+  modalTitle.textContent = 'New Entry';
+  deleteBtn.style.display = 'none';
+
+  const lastEntry = history.length > 0 ? history[history.length - 1] : null;
+  setKind(lastEntry ? lastEntry.kind || 'bouldering' : 'bouldering');
+  locationInput.value = lastEntry ? lastEntry.location || '' : '';
+  gradeInput.value = lastEntry ? lastEntry.grade || '' : '';
+  if (lastEntry && lastEntry.kind === 'kilterboard' && lastEntry.boardAngle) {
+    boardAngleInput.value = lastEntry.boardAngle;
+  } else {
+    boardAngleInput.value = '';
+  }
+
+  let shouldExpandContext = true;
+  if (lastEntry && lastEntry.loggedAt) {
+    const diffHours = (new Date() - new Date(lastEntry.loggedAt)) / (1000 * 60 * 60);
+    if (diffHours < 2) {
+      shouldExpandContext = false;
+    }
+  }
+
+  if (shouldExpandContext || history.length === 0) {
+    contextBody.classList.remove('hidden');
+    contextToggleLink.textContent = 'Hide';
+  } else {
+    contextBody.classList.add('hidden');
+    contextToggleLink.textContent = 'Change';
+  }
+
+  updateContextSummary();
+  updateChips('location', locationInput, locationChips);
+  updateChips('grade', gradeInput, gradeChips);
+  renderFrequentOutcomes();
+  updateOutcomesDatalist();
+
+  customOutcomeInput.value = '';
+  categorySelectorRow.style.display = 'none';
+  selectedCustomCategory = null;
+  catBtns.forEach(b => b.className = 'cat-btn');
+
+  modalOverlay.classList.add('active');
+}
+
+function openModalForEdit(id) {
+  const entry = history.find(item => item.id === id);
+  if (!entry) return;
+
+  editingId = entry.id;
+  modalTitle.textContent = 'Edit Entry';
+  deleteBtn.style.display = 'block';
+
+  setKind(entry.kind || 'bouldering');
+  locationInput.value = entry.location || '';
+  gradeInput.value = entry.grade || '';
+  if (entry.kind === 'kilterboard' && entry.boardAngle !== undefined) {
+    boardAngleInput.value = entry.boardAngle;
+  } else {
+    boardAngleInput.value = '';
+  }
+
+  contextBody.classList.add('hidden');
+  contextToggleLink.textContent = 'Change';
+  updateContextSummary();
+
+  updateChips('location', locationInput, locationChips);
+  updateChips('grade', gradeInput, gradeChips);
+  renderFrequentOutcomes();
+  updateOutcomesDatalist();
+
+  customOutcomeInput.value = '';
+  categorySelectorRow.style.display = 'none';
+  selectedCustomCategory = null;
+  catBtns.forEach(b => b.className = 'cat-btn');
+
+  modalOverlay.classList.add('active');
+}
+
+function closeModal() {
+  modalOverlay.classList.remove('active');
+  editingId = null;
+}
+
+function handleOutcomeSelect(chosenOutcome) {
+  const locVal = resolveExistingCasing('location', locationInput.value);
+  const gradeVal = resolveExistingCasing('grade', gradeInput.value);
+
+  if (!locVal || !gradeVal) {
+    alert('Please fill in both Location and Grade before selecting an outcome.');
+    return;
+  }
+
+  let angleVal = null;
+  if (selectedKind === 'kilterboard') {
+    const parsedAngle = Number(boardAngleInput.value);
+    if (!isNaN(parsedAngle) && boardAngleInput.value.trim() !== '') {
+      angleVal = parsedAngle;
+    }
+  }
+
+  let targetId = editingId;
+  const isEditing = Boolean(editingId);
+
+  if (isEditing) {
+    const index = history.findIndex(item => item.id === editingId);
+    if (index !== -1) {
+      history[index].kind = selectedKind;
+      history[index].location = locVal;
+      history[index].grade = gradeVal;
+      history[index].outcome = chosenOutcome;
+      if (selectedKind === 'kilterboard' && angleVal !== null) {
+        history[index].boardAngle = angleVal;
+      } else {
+        delete history[index].boardAngle;
+      }
+    }
+  } else {
+    targetId = generateId();
+    const newEntry = {
+      id: targetId,
+      loggedAt: new Date().toISOString(),
+      kind: selectedKind,
+      location: locVal,
+      grade: gradeVal,
+      outcome: chosenOutcome
+    };
+    if (selectedKind === 'kilterboard' && angleVal !== null) {
+      newEntry.boardAngle = angleVal;
+    }
+    history.push(newEntry);
+  }
+
+  saveData();
+  renderHistory();
+  closeModal();
+}
+
+contextHeader.addEventListener('click', () => {
+  const isHidden = contextBody.classList.toggle('hidden');
+  contextToggleLink.textContent = isHidden ? 'Change' : 'Hide';
+});
+
+openModalBtn.addEventListener('click', openModal);
+closeModalBtn.addEventListener('click', closeModal);
+modalOverlay.addEventListener('click', (e) => { if (e.target === modalOverlay) closeModal(); });
+
+openMenuBtn.addEventListener('click', openMenuModal);
+closeMenuModalBtn.addEventListener('click', closeMenuModal);
+menuModalOverlay.addEventListener('click', (e) => { if (e.target === menuModalOverlay) closeMenuModal(); });
+
+exportJsonBtn.addEventListener('click', exportToJSON);
+importJsonBtn.addEventListener('click', () => importFileInput.click());
+importFileInput.addEventListener('change', handleJSONImport);
+
+kindTabs.forEach(tab => {
+  tab.addEventListener('click', () => {
+    setKind(tab.dataset.kind);
+  });
+});
+
+angleChips.forEach(chip => {
+  chip.addEventListener('click', () => {
+    boardAngleInput.value = chip.dataset.angle;
+  });
+});
+
+locationInput.addEventListener('input', () => {
+  updateChips('location', locationInput, locationChips);
+  updateContextSummary();
+});
+gradeInput.addEventListener('input', () => updateChips('grade', gradeInput, gradeChips));
+
+customOutcomeInput.addEventListener('input', () => {
+  const val = customOutcomeInput.value.trim();
+  if (val.length > 0) {
+    categorySelectorRow.style.display = 'flex';
+  } else {
+    categorySelectorRow.style.display = 'none';
+    selectedCustomCategory = null;
+    catBtns.forEach(b => b.className = 'cat-btn');
+  }
+});
+
+catBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    catBtns.forEach(b => b.className = 'cat-btn');
+    const cat = btn.dataset.cat;
+    selectedCustomCategory = cat;
+    if (cat === 'success') btn.className = 'cat-btn selected-success';
+    if (cat === 'failure') btn.className = 'cat-btn selected-failure';
+    if (cat === 'skip') btn.className = 'cat-btn selected-skip';
+  });
+});
+
+saveCustomOutcomeBtn.addEventListener('click', () => {
+  const outcomeText = customOutcomeInput.value.trim().toLowerCase();
+  if (!outcomeText) {
+    alert('Please enter an outcome name.');
+    return;
+  }
+  if (!selectedCustomCategory) {
+    alert('Please select whether this outcome is a Success, Failure, or Skip.');
+    return;
+  }
+
+  if (!outcomes.some(o => o.name.toLowerCase() === outcomeText)) {
+    outcomes.push({ name: outcomeText, category: selectedCustomCategory });
+    saveData();
+  }
+
+  handleOutcomeSelect(outcomeText);
+});
+
+deleteBtn.addEventListener('click', () => {
+  if (editingId) {
+    history = history.filter(item => item.id !== editingId);
+    saveData();
+    renderHistory();
+    closeModal();
+  }
+});
+
+loadData();
+renderHistory();
