@@ -34,7 +34,9 @@ describe('parseBackup', () => {
     expect(parseBackup(JSON.stringify([legacy])).attempts).toEqual([attempt]);
     expect(parseBackup(JSON.stringify({ entries: [legacy] })).attempts).toEqual([attempt]);
     expect(
-      parseBackup(JSON.stringify({ attempts: [attempt], customOutcomes: [{ name: 'x', category: 'skip' }] })).outcomes,
+      parseBackup(
+        JSON.stringify({ attempts: [attempt], customOutcomes: [{ name: 'x', category: 'skip' }] }),
+      ).outcomes,
     ).toEqual([{ name: 'x', category: 'skip' }]);
   });
 
@@ -43,14 +45,18 @@ describe('parseBackup', () => {
   });
 
   it('drops attempts missing required fields', () => {
-    const { attempts } = parseBackup(JSON.stringify([attempt, { ...attempt, id: 'a2', grade: '' }, null]));
-    expect(attempts.map(a => a.id)).toEqual(['a1']);
+    const { attempts } = parseBackup(
+      JSON.stringify([attempt, { ...attempt, id: 'a2', grade: '' }, null]),
+    );
+    expect(attempts.map((a) => a.id)).toEqual(['a1']);
   });
 
   it('replaces missing and duplicate ids', () => {
-    const { attempts } = parseBackup(JSON.stringify([attempt, attempt, { ...attempt, id: undefined }]));
+    const { attempts } = parseBackup(
+      JSON.stringify([attempt, attempt, { ...attempt, id: undefined }]),
+    );
     expect(attempts[0].id).toBe('a1');
-    expect(new Set(attempts.map(a => a.id)).size).toBe(3);
+    expect(new Set(attempts.map((a) => a.id)).size).toBe(3);
   });
 
   it('defaults unknown kinds to bouldering and keeps board angle only for kilterboard', () => {
@@ -61,15 +67,20 @@ describe('parseBackup', () => {
         { ...attempt, id: 'u', kind: 'ice' },
       ]),
     );
-    expect(attempts.find(a => a.id === 'k').boardAngle).toBe(40);
-    expect(attempts.find(a => a.id === 'b')).not.toHaveProperty('boardAngle');
-    expect(attempts.find(a => a.id === 'u').kind).toBe('bouldering');
+    expect(attempts.find((a) => a.id === 'k').boardAngle).toBe(40);
+    expect(attempts.find((a) => a.id === 'b')).not.toHaveProperty('boardAngle');
+    expect(attempts.find((a) => a.id === 'u').kind).toBe('bouldering');
   });
 
   it('trims text fields and sorts oldest first', () => {
-    const later = { ...attempt, id: 'late', loggedAt: '2026-11-02T10:00:00.000Z', location: '  BW Ost  ' };
+    const later = {
+      ...attempt,
+      id: 'late',
+      loggedAt: '2026-11-02T10:00:00.000Z',
+      location: '  BW Ost  ',
+    };
     const { attempts } = parseBackup(JSON.stringify([later, attempt]));
-    expect(attempts.map(a => a.id)).toEqual(['a1', 'late']);
+    expect(attempts.map((a) => a.id)).toEqual(['a1', 'late']);
     expect(attempts[1].location).toBe('BW Ost');
   });
 

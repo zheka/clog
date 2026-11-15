@@ -1,147 +1,224 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Clog - Local Climbing Log</title>
-  <link rel="stylesheet" href="/src/style.css">
-</head>
-<body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>Clog - Local Climbing Log</title>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <div class="app-container">
+      <header>
+        <h1>Climbing Log</h1>
+        <button
+          id="openMenuBtn"
+          class="menu-btn"
+          aria-label="Data & Backup Menu"
+          title="Data & Backup"
+        >
+          <svg viewBox="0 0 24 24">
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+      </header>
 
-  <div class="app-container">
-    <header>
-      <h1>Climbing Log</h1>
-      <button id="openMenuBtn" class="menu-btn" aria-label="Data & Backup Menu" title="Data & Backup">
-        <svg viewBox="0 0 24 24">
-          <line x1="3" y1="6" x2="21" y2="6"></line>
-          <line x1="3" y1="12" x2="21" y2="12"></line>
-          <line x1="3" y1="18" x2="21" y2="18"></line>
-        </svg>
-      </button>
-    </header>
+      <main id="mainContent">
+        <div id="historyList" class="history-list"></div>
+      </main>
 
-    <main id="mainContent">
-      <div id="historyList" class="history-list"></div>
-    </main>
+      <button id="openModalBtn" class="fab" aria-label="New Entry">+</button>
 
-    <button id="openModalBtn" class="fab" aria-label="New Entry">+</button>
+      <div id="menuModalOverlay" class="modal-overlay">
+        <div class="modal-sheet">
+          <div class="modal-header">
+            <span class="modal-title">Data & Backup</span>
+            <button id="closeMenuModalBtn" class="close-btn">&times;</button>
+          </div>
 
-    <div id="menuModalOverlay" class="modal-overlay">
-      <div class="modal-sheet">
-        <div class="modal-header">
-          <span class="modal-title">Data & Backup</span>
-          <button id="closeMenuModalBtn" class="close-btn">&times;</button>
+          <div class="menu-actions">
+            <button type="button" id="exportJsonBtn" class="menu-action-btn">
+              <div class="menu-action-info">
+                <span>Export Backup (JSON)</span>
+                <span class="menu-action-sub">Download versioned file with all attempts</span>
+              </div>
+              <span class="menu-action-icon">&uarr;</span>
+            </button>
+
+            <button type="button" id="importJsonBtn" class="menu-action-btn">
+              <div class="menu-action-info">
+                <span>Import Backup (JSON)</span>
+                <span class="menu-action-sub">Restore attempts from a backup file</span>
+              </div>
+              <span class="menu-action-icon">&darr;</span>
+            </button>
+          </div>
+
+          <input
+            type="file"
+            id="importFileInput"
+            accept=".json,application/json"
+            style="display: none"
+          />
         </div>
+      </div>
 
-        <div class="menu-actions">
-          <button type="button" id="exportJsonBtn" class="menu-action-btn">
-            <div class="menu-action-info">
-              <span>Export Backup (JSON)</span>
-              <span class="menu-action-sub">Download versioned file with all attempts</span>
-            </div>
-            <span class="menu-action-icon">&uarr;</span>
-          </button>
+      <div id="modalOverlay" class="modal-overlay">
+        <div class="modal-sheet">
+          <div class="modal-header">
+            <span id="modalTitle" class="modal-title">New Entry</span>
+            <button id="closeModalBtn" class="close-btn">&times;</button>
+          </div>
 
-          <button type="button" id="importJsonBtn" class="menu-action-btn">
-            <div class="menu-action-info">
-              <span>Import Backup (JSON)</span>
-              <span class="menu-action-sub">Restore attempts from a backup file</span>
+          <form id="entryForm">
+            <!-- Collapsible Location & Kind Context Section -->
+            <div class="form-group">
+              <label>Context</label>
+              <div id="contextHeader" class="context-accordion-header">
+                <span id="contextSummaryText" class="context-summary"
+                  >BW Ost &bull; bouldering</span
+                >
+                <span id="contextToggleLink" class="context-toggle-link">Change</span>
+              </div>
+              <div id="contextBody" class="context-collapsible-body hidden">
+                <div class="form-group">
+                  <label>Climbing Type</label>
+                  <div class="kind-picker">
+                    <button type="button" class="kind-tab active" data-kind="bouldering">
+                      Bouldering
+                    </button>
+                    <button type="button" class="kind-tab" data-kind="route">Route</button>
+                    <button type="button" class="kind-tab" data-kind="kilterboard">
+                      Kilterboard
+                    </button>
+                  </div>
+                </div>
+
+                <div class="form-group" id="boardAngleGroup" style="display: none">
+                  <label for="boardAngleInput">Board Angle (&deg;)</label>
+                  <input
+                    type="number"
+                    id="boardAngleInput"
+                    placeholder="e.g. 40"
+                    min="0"
+                    max="70"
+                  />
+                  <div id="angleChips" class="chips-container">
+                    <span class="chip-small" data-angle="30">30&deg;</span>
+                    <span class="chip-small" data-angle="40">40&deg;</span>
+                    <span class="chip-small" data-angle="45">45&deg;</span>
+                    <span class="chip-small" data-angle="50">50&deg;</span>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="locationInput">Location</label>
+                  <input
+                    type="text"
+                    id="locationInput"
+                    placeholder="e.g. element boulders"
+                    autocomplete="off"
+                  />
+                  <div id="locationChips" class="chips-container"></div>
+                </div>
+              </div>
             </div>
-            <span class="menu-action-icon">&darr;</span>
-          </button>
+
+            <div class="form-group">
+              <label for="gradeInput">Grade</label>
+              <input
+                type="text"
+                id="gradeInput"
+                placeholder="e.g. v5, 6, 7"
+                autocomplete="off"
+                required
+              />
+              <div id="gradeChips" class="chips-container"></div>
+            </div>
+
+            <!-- Outcome Section: Top Frequent Chips -->
+            <div class="form-group">
+              <label>Outcome</label>
+              <div class="outcome-picker">
+                <div class="outcome-row" id="frequentOutcomesRow">
+                  <!-- Dynamically rendered top frequent outcomes -->
+                </div>
+              </div>
+            </div>
+
+            <!-- Collapsible Custom Outcome On-The-Fly Section (Collapsed by default via <details>) -->
+            <div class="form-group">
+              <details
+                class="custom-outcomes-accordion"
+                style="
+                  background: var(--input-bg);
+                  border: 1px solid var(--border);
+                  border-radius: 8px;
+                  padding: 10px 12px;
+                "
+              >
+                <summary
+                  style="
+                    font-size: 0.75rem;
+                    color: var(--text-muted);
+                    cursor: pointer;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                    user-select: none;
+                  "
+                >
+                  Add Custom Outcome
+                </summary>
+                <div
+                  class="custom-outcome-box"
+                  style="
+                    margin-top: 10px;
+                    padding-top: 10px;
+                    border-top: 1px solid var(--border);
+                    background: transparent;
+                    border: none;
+                    padding: 0;
+                  "
+                >
+                  <div class="custom-outcome-input-row">
+                    <input
+                      type="text"
+                      id="customOutcomeInput"
+                      placeholder="e.g. sloppy heel hook"
+                      autocomplete="off"
+                      list="outcomes-list"
+                    />
+                    <datalist id="outcomes-list"></datalist>
+                  </div>
+                  <div
+                    class="category-selector-row"
+                    id="categorySelectorRow"
+                    style="display: none; margin-top: 8px"
+                  >
+                    <button type="button" class="cat-btn" data-cat="success">🟢 Success</button>
+                    <button type="button" class="cat-btn" data-cat="failure">🔴 Failure</button>
+                    <button type="button" class="cat-btn" data-cat="skip">⚪ Skip</button>
+                    <button type="button" id="saveCustomOutcomeBtn" class="save-custom-btn">
+                      Save & Log
+                    </button>
+                  </div>
+                </div>
+              </details>
+            </div>
+
+            <div class="form-actions">
+              <button type="button" id="deleteBtn" class="delete-btn">Delete Entry</button>
+            </div>
+          </form>
         </div>
-
-        <input type="file" id="importFileInput" accept=".json,application/json" style="display: none;" />
       </div>
     </div>
 
-    <div id="modalOverlay" class="modal-overlay">
-      <div class="modal-sheet">
-        <div class="modal-header">
-          <span id="modalTitle" class="modal-title">New Entry</span>
-          <button id="closeModalBtn" class="close-btn">&times;</button>
-        </div>
-
-        <form id="entryForm">
-          <!-- Collapsible Location & Kind Context Section -->
-          <div class="form-group">
-            <label>Context</label>
-            <div id="contextHeader" class="context-accordion-header">
-              <span id="contextSummaryText" class="context-summary">BW Ost &bull; bouldering</span>
-              <span id="contextToggleLink" class="context-toggle-link">Change</span>
-            </div>
-            <div id="contextBody" class="context-collapsible-body hidden">
-              <div class="form-group">
-                <label>Climbing Type</label>
-                <div class="kind-picker">
-                  <button type="button" class="kind-tab active" data-kind="bouldering">Bouldering</button>
-                  <button type="button" class="kind-tab" data-kind="route">Route</button>
-                  <button type="button" class="kind-tab" data-kind="kilterboard">Kilterboard</button>
-                </div>
-              </div>
-
-              <div class="form-group" id="boardAngleGroup" style="display: none;">
-                <label for="boardAngleInput">Board Angle (&deg;)</label>
-                <input type="number" id="boardAngleInput" placeholder="e.g. 40" min="0" max="70" />
-                <div id="angleChips" class="chips-container">
-                  <span class="chip-small" data-angle="30">30&deg;</span>
-                  <span class="chip-small" data-angle="40">40&deg;</span>
-                  <span class="chip-small" data-angle="45">45&deg;</span>
-                  <span class="chip-small" data-angle="50">50&deg;</span>
-                </div>
-              </div>
-
-              <div class="form-group">
-                <label for="locationInput">Location</label>
-                <input type="text" id="locationInput" placeholder="e.g. element boulders" autocomplete="off" />
-                <div id="locationChips" class="chips-container"></div>
-              </div>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label for="gradeInput">Grade</label>
-            <input type="text" id="gradeInput" placeholder="e.g. v5, 6, 7" autocomplete="off" required />
-            <div id="gradeChips" class="chips-container"></div>
-          </div>
-
-          <!-- Outcome Section: Top Frequent Chips -->
-          <div class="form-group">
-            <label>Outcome</label>
-            <div class="outcome-picker">
-              <div class="outcome-row" id="frequentOutcomesRow">
-                <!-- Dynamically rendered top frequent outcomes -->
-              </div>
-            </div>
-          </div>
-
-          <!-- Collapsible Custom Outcome On-The-Fly Section (Collapsed by default via <details>) -->
-          <div class="form-group">
-            <details class="custom-outcomes-accordion" style="background: var(--input-bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px;">
-              <summary style="font-size: 0.75rem; color: var(--text-muted); cursor: pointer; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; user-select: none;">Add Custom Outcome</summary>
-              <div class="custom-outcome-box" style="margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); background: transparent; border: none; padding: 0;">
-                <div class="custom-outcome-input-row">
-                  <input type="text" id="customOutcomeInput" placeholder="e.g. sloppy heel hook" autocomplete="off" list="outcomes-list" />
-                  <datalist id="outcomes-list"></datalist>
-                </div>
-                <div class="category-selector-row" id="categorySelectorRow" style="display: none; margin-top: 8px;">
-                  <button type="button" class="cat-btn" data-cat="success">🟢 Success</button>
-                  <button type="button" class="cat-btn" data-cat="failure">🔴 Failure</button>
-                  <button type="button" class="cat-btn" data-cat="skip">⚪ Skip</button>
-                  <button type="button" id="saveCustomOutcomeBtn" class="save-custom-btn">Save & Log</button>
-                </div>
-              </div>
-            </details>
-          </div>
-
-          <div class="form-actions">
-            <button type="button" id="deleteBtn" class="delete-btn">Delete Entry</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-
-  <script type="module" src="/src/main.ts"></script>
-</body>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
 </html>

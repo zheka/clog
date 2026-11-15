@@ -20,17 +20,22 @@ export function loadData(): { history: Attempt[]; outcomes: Outcome[] } {
   if (data) {
     try {
       const parsed = JSON.parse(data);
-      const rawAttempts = Array.isArray(parsed) ? parsed : (parsed.attempts || parsed.entries || []);
-      history = rawAttempts.map(item => {
+      const rawAttempts = Array.isArray(parsed) ? parsed : parsed.attempts || parsed.entries || [];
+      history = rawAttempts.map((item) => {
         const entry: Attempt = {
           id: item.id || generateId(),
           loggedAt: item.loggedAt || item.timestamp || new Date().toISOString(),
           kind: KINDS.includes(item.kind) ? item.kind : 'bouldering',
           location: String(item.location || 'Unknown').trim(),
           grade: String(item.grade || '').trim(),
-          outcome: String(item.outcome || '').trim()
+          outcome: String(item.outcome || '').trim(),
         };
-        if (entry.kind === 'kilterboard' && item.boardAngle !== undefined && item.boardAngle !== null && item.boardAngle !== '') {
+        if (
+          entry.kind === 'kilterboard' &&
+          item.boardAngle !== undefined &&
+          item.boardAngle !== null &&
+          item.boardAngle !== ''
+        ) {
           entry.boardAngle = Number(item.boardAngle);
         }
         return entry;
@@ -64,16 +69,21 @@ export function exportToJSON(history: Attempt[], outcomes: Outcome[]): boolean {
     alert('No attempts to export.');
     return false;
   }
-  const cleanAttempts = history.map(item => {
+  const cleanAttempts = history.map((item) => {
     const attempt: Attempt = {
       id: item.id,
       loggedAt: item.loggedAt,
       kind: item.kind,
       location: item.location,
       grade: item.grade,
-      outcome: item.outcome
+      outcome: item.outcome,
     };
-    if (item.kind === 'kilterboard' && item.boardAngle !== undefined && item.boardAngle !== null && !isNaN(item.boardAngle)) {
+    if (
+      item.kind === 'kilterboard' &&
+      item.boardAngle !== undefined &&
+      item.boardAngle !== null &&
+      !isNaN(item.boardAngle)
+    ) {
       attempt.boardAngle = Number(item.boardAngle);
     }
     return attempt;
@@ -84,7 +94,7 @@ export function exportToJSON(history: Attempt[], outcomes: Outcome[]): boolean {
     version: CURRENT_VERSION,
     exportedAt: new Date().toISOString(),
     outcomes: sortedOutcomes,
-    attempts: cleanAttempts
+    attempts: cleanAttempts,
   };
 
   const jsonContent = JSON.stringify(backupPayload, null, 2);
@@ -107,8 +117,8 @@ export function exportToJSON(history: Attempt[], outcomes: Outcome[]): boolean {
  */
 export function parseBackup(text: string): { attempts: Attempt[]; outcomes: Outcome[] | null } {
   const parsed = JSON.parse(text);
-  const importedAttempts = Array.isArray(parsed) ? parsed : (parsed.attempts || parsed.entries || []);
-  const validAttempts = importedAttempts.filter(item => {
+  const importedAttempts = Array.isArray(parsed) ? parsed : parsed.attempts || parsed.entries || [];
+  const validAttempts = importedAttempts.filter((item) => {
     return item && (item.loggedAt || item.timestamp) && item.location && item.grade && item.outcome;
   });
 
@@ -120,7 +130,7 @@ export function parseBackup(text: string): { attempts: Attempt[]; outcomes: Outc
   }
 
   const seenIds = new Set<string>();
-  const attempts: Attempt[] = validAttempts.map(entry => {
+  const attempts: Attempt[] = validAttempts.map((entry) => {
     let id = entry.id;
     if (!id || seenIds.has(String(id))) {
       id = generateId();
@@ -132,9 +142,14 @@ export function parseBackup(text: string): { attempts: Attempt[]; outcomes: Outc
       kind: KINDS.includes(entry.kind) ? entry.kind : 'bouldering',
       location: String(entry.location).trim(),
       grade: String(entry.grade).trim(),
-      outcome: String(entry.outcome).trim()
+      outcome: String(entry.outcome).trim(),
     };
-    if (mapped.kind === 'kilterboard' && entry.boardAngle !== undefined && entry.boardAngle !== null && entry.boardAngle !== '') {
+    if (
+      mapped.kind === 'kilterboard' &&
+      entry.boardAngle !== undefined &&
+      entry.boardAngle !== null &&
+      entry.boardAngle !== ''
+    ) {
       mapped.boardAngle = Number(entry.boardAngle);
     }
     return mapped;

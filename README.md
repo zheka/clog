@@ -1,4 +1,5 @@
 # clog
+
 Climbing LOGger — a small offline-first web app for logging climbing attempts.
 Data lives in the browser's `localStorage`; use the menu to export/import JSON backups.
 
