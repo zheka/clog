@@ -152,39 +152,9 @@
 
             <!-- Collapsible Custom Outcome On-The-Fly Section (Collapsed by default via <details>) -->
             <div class="form-group">
-              <details
-                class="custom-outcomes-accordion"
-                style="
-                  background: var(--input-bg);
-                  border: 1px solid var(--border);
-                  border-radius: 8px;
-                  padding: 10px 12px;
-                "
-              >
-                <summary
-                  style="
-                    font-size: 0.75rem;
-                    color: var(--text-muted);
-                    cursor: pointer;
-                    font-weight: 700;
-                    text-transform: uppercase;
-                    letter-spacing: 0.5px;
-                    user-select: none;
-                  "
-                >
-                  Add Custom Outcome
-                </summary>
-                <div
-                  class="custom-outcome-box"
-                  style="
-                    margin-top: 10px;
-                    padding-top: 10px;
-                    border-top: 1px solid var(--border);
-                    background: transparent;
-                    border: none;
-                    padding: 0;
-                  "
-                >
+              <details class="custom-outcomes-accordion">
+                <summary>Add Custom Outcome</summary>
+                <div class="custom-outcome-box">
                   <div class="custom-outcome-input-row">
                     <input
                       type="text"
@@ -195,11 +165,7 @@
                     />
                     <datalist id="outcomes-list"></datalist>
                   </div>
-                  <div
-                    class="category-selector-row"
-                    id="categorySelectorRow"
-                    style="display: none; margin-top: 8px"
-                  >
+                  <div class="category-selector-row" id="categorySelectorRow" style="display: none">
                     <button type="button" class="cat-btn" data-cat="success">🟢 Success</button>
                     <button type="button" class="cat-btn" data-cat="failure">🔴 Failure</button>
                     <button type="button" class="cat-btn" data-cat="skip">⚪ Skip</button>

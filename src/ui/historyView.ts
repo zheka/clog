@@ -45,7 +45,7 @@ export function mountHistoryView(store: Store, onEdit: (id: string) => void): vo
     headerEl.innerHTML = `
       <div class="group-header-left">
         ${PIN_ICON}
-        <span>${escapeHtml(session.location)} &bull; ${session.kind} &bull; <span style="font-weight: 400; opacity: 0.85;">${session.dateString}</span></span>
+        <span>${escapeHtml(session.location)} &bull; ${session.kind} &bull; <span class="group-date">${session.dateString}</span></span>
       </div>
       ${CHEVRON_ICON}
     `;

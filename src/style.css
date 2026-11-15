@@ -687,3 +687,38 @@ input[type='number']:focus {
   font-size: 1.1rem;
   font-weight: 700;
 }
+
+/* Session date in history group headers */
+.group-date {
+  font-weight: 400;
+  opacity: 0.85;
+}
+
+/* "Add Custom Outcome" accordion in the entry sheet */
+.custom-outcomes-accordion {
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.custom-outcomes-accordion > summary {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  user-select: none;
+}
+
+.custom-outcomes-accordion .custom-outcome-box {
+  margin-top: 10px;
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+.custom-outcomes-accordion .category-selector-row {
+  margin-top: 8px;
+}
