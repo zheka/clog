@@ -1,23 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { generateId, parseBackup } from './storage';
+import type { Attempt } from '../core/types';
+import { backupFileName, createBackup, parseBackup } from './backup';
 
-describe('generateId', () => {
-  it('returns unique ids', () => {
-    const ids = new Set(Array.from({ length: 100 }, generateId));
-    expect(ids.size).toBe(100);
-  });
-});
+const attempt: Attempt = {
+  id: 'a1',
+  loggedAt: '2026-11-01T10:00:00.000Z',
+  kind: 'bouldering',
+  location: 'BW Ost',
+  grade: 'v4',
+  outcome: 'flash',
+};
 
 describe('parseBackup', () => {
-  const attempt = {
-    id: 'a1',
-    loggedAt: '2026-11-01T10:00:00.000Z',
-    kind: 'bouldering',
-    location: 'BW Ost',
-    grade: 'v4',
-    outcome: 'flash',
-  };
-
   it('reads the current format with outcomes', () => {
     const text = JSON.stringify({
       version: '1.2.0',
@@ -86,5 +80,43 @@ describe('parseBackup', () => {
 
   it('throws on invalid JSON', () => {
     expect(() => parseBackup('not json')).toThrow();
+  });
+});
+
+describe('createBackup', () => {
+  it('builds a versioned payload with sorted outcomes and clean attempts', () => {
+    const now = new Date('2026-11-15T12:00:00Z');
+    const kb = { ...attempt, id: 'k', kind: 'kilterboard' as const, boardAngle: 40 };
+    const extra = { ...attempt, id: 'x', extra: 'dropped' } as typeof attempt;
+    const backup = createBackup(
+      [kb, extra],
+      [
+        { name: 'z', category: 'skip' },
+        { name: 'a', category: 'success' },
+      ],
+      now,
+    );
+    expect(backup).toEqual({
+      version: '1.2.0',
+      exportedAt: '2026-11-15T12:00:00.000Z',
+      outcomes: [
+        { name: 'a', category: 'success' },
+        { name: 'z', category: 'skip' },
+      ],
+      attempts: [kb, { ...attempt, id: 'x' }],
+    });
+  });
+
+  it('round-trips through parseBackup', () => {
+    const attempts = [attempt, { ...attempt, id: 'b', loggedAt: '2026-11-02T10:00:00.000Z' }];
+    const outcomes = [{ name: 'flash', category: 'success' as const }];
+    const parsed = parseBackup(JSON.stringify(createBackup(attempts, outcomes)));
+    expect(parsed).toEqual({ attempts, outcomes });
+  });
+});
+
+describe('backupFileName', () => {
+  it('uses the UTC date', () => {
+    expect(backupFileName(new Date('2026-11-15T23:30:00Z'))).toBe('clog_backup_2026-11-15.json');
   });
 });

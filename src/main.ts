@@ -1,5 +1,10 @@
-import { exportToJSON, generateId, loadData, parseBackup, saveData } from './storage';
-import type { Attempt, Category, Kind, Outcome } from './types';
+import { generateId } from './core/attempt';
+import { getCategory, sortByName } from './core/outcomes';
+import { groupIntoSessions } from './core/sessions';
+import { matchExistingCasing, quickOutcomes, suggestValues } from './core/suggestions';
+import type { Attempt, Category, Kind, Outcome } from './core/types';
+import { backupFileName, createBackup, parseBackup } from './data/backup';
+import { loadData, saveData } from './data/storage';
 
 let history: Attempt[] = [];
 let outcomes: Outcome[] = [];
@@ -42,39 +47,15 @@ const categorySelectorRow = document.getElementById('categorySelectorRow');
 const catBtns = document.querySelectorAll<HTMLElement>('.cat-btn');
 const saveCustomOutcomeBtn = document.getElementById('saveCustomOutcomeBtn');
 
-function getCategoryForOutcome(outcomeName: string): Category {
-  const lower = outcomeName.toLowerCase().trim();
-  const found = outcomes.find((o) => o.name.toLowerCase() === lower);
-  if (found) return found.category;
-  return 'failure'; // fallback
-}
-
 function updateOutcomesDatalist() {
   const dl = document.getElementById('outcomes-list');
   if (!dl) return;
   dl.innerHTML = '';
-  const sortedOutcomes = [...outcomes].sort((a, b) => a.name.localeCompare(b.name));
-  sortedOutcomes.forEach((o) => {
+  sortByName(outcomes).forEach((o) => {
     const opt = document.createElement('option');
     opt.value = o.name;
     dl.appendChild(opt);
   });
-}
-
-function resolveExistingCasing(fieldKey: 'location' | 'grade', typedValue: string): string {
-  const trimmed = typedValue.trim();
-  if (!trimmed) return '';
-  for (let i = history.length - 1; i >= 0; i--) {
-    const val = history[i][fieldKey];
-    if (
-      val &&
-      typeof val === 'string' &&
-      val.trim().toLowerCase() === typedValue.trim().toLowerCase()
-    ) {
-      return val.trim();
-    }
-  }
-  return trimmed;
 }
 
 function setKind(kind: Kind) {
@@ -100,35 +81,13 @@ function updateContextSummary() {
   contextSummaryText.textContent = `${loc} • ${selectedKind}`;
 }
 
-// Recency-based chips: latest used outcomes appear first
-function getFrequentOutcomes(): string[] {
-  const recentList: string[] = [];
-
-  // 1. Gather outcomes from history in reverse chronological order (most recent first)
-  for (let i = history.length - 1; i >= 0; i--) {
-    const out = history[i].outcome;
-    if (out && !recentList.some((r) => r.toLowerCase() === out.toLowerCase())) {
-      recentList.push(out);
-    }
-  }
-
-  // 2. Append any remaining registered outcomes that haven't been used yet
-  outcomes.forEach((o) => {
-    if (!recentList.some((r) => r.toLowerCase() === o.name.toLowerCase())) {
-      recentList.push(o.name);
-    }
-  });
-
-  return recentList.slice(0, 8); // Top 8 recent outcomes
-}
-
 function renderFrequentOutcomes() {
   frequentOutcomesRow.innerHTML = '';
-  const freqs = getFrequentOutcomes();
+  const freqs = quickOutcomes(history, outcomes);
   const lastOutcome = history.length > 0 ? history[history.length - 1].outcome : null;
 
   freqs.forEach((outcome) => {
-    const cat = getCategoryForOutcome(outcome);
+    const cat = getCategory(outcomes, outcome);
     const chip = document.createElement('span');
 
     // Highlight the last used outcome as preselected
@@ -145,65 +104,13 @@ function renderFrequentOutcomes() {
   });
 }
 
-function getAutocompleteValues(
-  fieldKey: 'location' | 'grade' | 'outcome',
-  filterText = '',
-): string[] {
-  const query = filterText.trim().toLowerCase();
-  const matching: string[] = [];
-  const recent: string[] = [];
-
-  if (fieldKey === 'outcome') {
-    outcomes.forEach((o) => {
-      const trimmed = o.name.trim();
-      if (trimmed.length > 0) {
-        if (query === '' || trimmed.toLowerCase().includes(query)) {
-          if (!matching.some((m) => m.toLowerCase() === trimmed.toLowerCase())) {
-            matching.push(trimmed);
-          }
-        }
-      }
-    });
-    return matching.slice(0, 5);
-  }
-
-  for (let i = history.length - 1; i >= 0; i--) {
-    if (editingId && history[i].id === editingId) continue;
-    const val = history[i][fieldKey];
-    if (val && typeof val === 'string') {
-      const trimmed = val.trim();
-      if (trimmed.length > 0 && !recent.some((r) => r.toLowerCase() === trimmed.toLowerCase())) {
-        recent.push(trimmed);
-      }
-    }
-  }
-
-  recent.forEach((trimmed) => {
-    if (query === '' || trimmed.toLowerCase().includes(query)) {
-      if (!matching.some((m) => m.toLowerCase() === trimmed.toLowerCase())) {
-        matching.push(trimmed);
-      }
-    }
-  });
-
-  const results = [...matching];
-  for (let i = 0; i < recent.length && results.length < 3; i++) {
-    const item = recent[i];
-    if (!results.some((r) => r.toLowerCase() === item.toLowerCase())) {
-      results.push(item);
-    }
-  }
-
-  return results.slice(0, 3);
-}
-
 function updateChips(
   fieldKey: 'location' | 'grade',
   inputElem: HTMLInputElement,
   containerElem: HTMLElement,
 ) {
   containerElem.innerHTML = '';
-  const items = getAutocompleteValues(fieldKey, inputElem.value);
+  const items = suggestValues(history, fieldKey, inputElem.value, editingId);
   items.forEach((text) => {
     const chip = document.createElement('span');
     chip.className = 'chip-small';
@@ -217,14 +124,6 @@ function updateChips(
   });
 }
 
-interface HistoryGroup {
-  key: string;
-  location: string;
-  kind: Kind;
-  dateString: string;
-  entries: Attempt[];
-}
-
 function renderHistory() {
   historyList.innerHTML = '';
   if (history.length === 0) {
@@ -233,31 +132,7 @@ function renderHistory() {
     return;
   }
 
-  const reversedHistory = [...history].reverse();
-  const groups: HistoryGroup[] = [];
-  let currentGroup: HistoryGroup | null = null;
-
-  reversedHistory.forEach((entry) => {
-    const loc = entry.location || 'Unknown Location';
-    const kind = entry.kind || 'bouldering';
-
-    const dateObj = new Date(entry.loggedAt);
-    const dateStr = dateObj.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-
-    const groupKey = `${loc}___${kind}___${dateStr}`;
-
-    if (!currentGroup || currentGroup.key !== groupKey) {
-      currentGroup = {
-        key: groupKey,
-        location: loc,
-        kind: kind,
-        dateString: dateStr,
-        entries: [],
-      };
-      groups.push(currentGroup);
-    }
-    currentGroup.entries.push(entry);
-  });
+  const groups = groupIntoSessions(history);
 
   groups.forEach((group, index) => {
     const groupEl = document.createElement('div');
@@ -297,7 +172,7 @@ function renderHistory() {
         hour12: false,
       });
 
-      const cat = getCategoryForOutcome(entry.outcome);
+      const cat = getCategory(outcomes, entry.outcome);
       let badgeClass = 'entry-status-gray';
       if (cat === 'success') badgeClass = 'entry-status-green';
       if (cat === 'failure') badgeClass = 'entry-status-red';
@@ -437,8 +312,8 @@ function closeModal() {
 }
 
 function handleOutcomeSelect(chosenOutcome: string) {
-  const locVal = resolveExistingCasing('location', locationInput.value);
-  const gradeVal = resolveExistingCasing('grade', gradeInput.value);
+  const locVal = matchExistingCasing(history, 'location', locationInput.value);
+  const gradeVal = matchExistingCasing(history, 'grade', gradeInput.value);
 
   if (!locVal || !gradeVal) {
     alert('Please fill in both Location and Grade before selecting an outcome.');
@@ -486,6 +361,28 @@ function handleOutcomeSelect(chosenOutcome: string) {
   saveData(history, outcomes);
   renderHistory();
   closeModal();
+}
+
+function downloadFile(fileName: string, content: string, mimeType: string) {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.setAttribute('href', url);
+  link.setAttribute('download', fileName);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+function exportBackup() {
+  if (history.length === 0) {
+    alert('No attempts to export.');
+    return;
+  }
+  const json = JSON.stringify(createBackup(history, outcomes), null, 2);
+  downloadFile(backupFileName(), json, 'application/json;charset=utf-8;');
+  closeMenuModal();
 }
 
 function handleJSONImport(event: Event) {
@@ -548,9 +445,7 @@ menuModalOverlay.addEventListener('click', (e) => {
   if (e.target === menuModalOverlay) closeMenuModal();
 });
 
-exportJsonBtn.addEventListener('click', () => {
-  if (exportToJSON(history, outcomes)) closeMenuModal();
-});
+exportJsonBtn.addEventListener('click', exportBackup);
 importJsonBtn.addEventListener('click', () => importFileInput.click());
 importFileInput.addEventListener('change', handleJSONImport);
 
@@ -630,5 +525,5 @@ deleteBtn.addEventListener('click', () => {
   }
 });
 
-({ history, outcomes } = loadData());
+({ attempts: history, outcomes } = loadData());
 renderHistory();
