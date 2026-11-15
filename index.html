@@ -16,6 +16,7 @@
       --text-muted: #9ca3af;
       --success: #10b981;
       --failure: #ef4444;
+      --skip: #6b7280;
       --chip-bg: #2d3748;
       --chip-border: #4a5568;
     }
@@ -38,7 +39,6 @@
       overflow-x: hidden;
     }
 
-    /* Pixel 8a Viewport Container (412px max width target) */
     .app-container {
       width: 100%;
       max-width: 412px;
@@ -68,21 +68,33 @@
       letter-spacing: -0.5px;
     }
 
-    .export-btn {
-      font-size: 0.75rem;
+    .menu-btn {
       background: var(--input-bg);
-      padding: 6px 12px;
-      border-radius: 12px;
-      color: var(--text);
       border: 1px solid var(--border);
+      color: var(--text);
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
       cursor: pointer;
-      font-weight: 600;
       transition: all 0.15s ease;
     }
 
-    .export-btn:hover {
+    .menu-btn:hover {
       border-color: var(--primary);
       color: var(--primary);
+    }
+
+    .menu-btn svg {
+      width: 20px;
+      height: 20px;
+      stroke: currentColor;
+      stroke-width: 2;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
     }
 
     main {
@@ -103,7 +115,6 @@
       color: var(--text-muted);
     }
 
-    /* Location & Date Group */
     .group-container {
       display: flex;
       flex-direction: column;
@@ -159,22 +170,26 @@
       border: 1px solid var(--border);
     }
 
-    .entry-status-green {
+    .entry-status-badge {
       font-size: 0.8rem;
       font-weight: 600;
       padding: 2px 8px;
       border-radius: 6px;
+    }
+
+    .entry-status-green {
       background: rgba(16, 185, 129, 0.15);
       color: var(--success);
     }
 
-    .entry-reason-red {
-      font-size: 0.8rem;
-      font-weight: 600;
-      padding: 2px 8px;
-      border-radius: 6px;
+    .entry-status-red {
       background: rgba(239, 68, 68, 0.15);
       color: var(--failure);
+    }
+
+    .entry-status-gray {
+      background: rgba(107, 114, 128, 0.15);
+      color: var(--skip);
     }
 
     .entry-right {
@@ -199,7 +214,6 @@
       color: var(--primary);
     }
 
-    /* Fixed Floating Add Button */
     .fab {
       position: fixed;
       bottom: 20px;
@@ -225,7 +239,6 @@
       }
     }
 
-    /* Modal Overlay */
     .modal-overlay {
       position: fixed;
       top: 0;
@@ -260,6 +273,9 @@
       transition: transform 0.25s cubic-bezier(0.1, 0.9, 0.2, 1);
       max-height: 90vh;
       overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
     }
 
     .modal-overlay.active .modal-sheet {
@@ -270,7 +286,6 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 16px;
     }
 
     .modal-title {
@@ -284,24 +299,26 @@
       color: var(--text-muted);
       font-size: 1.5rem;
       cursor: pointer;
+      line-height: 1;
     }
 
     .form-group {
-      margin-bottom: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
     }
 
     label {
-      display: block;
-      font-size: 0.8rem;
+      font-size: 0.75rem;
       color: var(--text-muted);
-      margin-bottom: 6px;
       text-transform: uppercase;
       letter-spacing: 0.5px;
+      font-weight: 700;
     }
 
     input[type="text"] {
       width: 100%;
-      padding: 12px;
+      padding: 10px 12px;
       background: var(--input-bg);
       border: 1px solid var(--border);
       border-radius: 8px;
@@ -314,46 +331,15 @@
       border-color: var(--primary);
     }
 
-    /* Outcome Toggle */
-    .toggle-group {
-      display: flex;
-      gap: 10px;
-    }
-
-    .toggle-btn {
-      flex: 1;
-      padding: 12px;
-      background: var(--input-bg);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      color: var(--text-muted);
-      font-weight: 600;
-      cursor: pointer;
-      text-align: center;
-    }
-
-    .toggle-btn.selected[data-value="Success"] {
-      background: var(--success);
-      color: white;
-      border-color: var(--success);
-    }
-
-    .toggle-btn.selected[data-value="Failure"] {
-      background: var(--failure);
-      color: white;
-      border-color: var(--failure);
-    }
-
-    /* Dynamic Chips Container */
     .chips-container {
       display: flex;
       flex-wrap: wrap;
       gap: 6px;
-      margin-top: 8px;
+      margin-top: 2px;
       min-height: 28px;
     }
 
-    .chip {
+    .chip-small {
       background: var(--chip-bg);
       border: 1px solid var(--chip-border);
       color: var(--text);
@@ -365,46 +351,142 @@
       transition: background 0.15s ease;
     }
 
-    .chip:active {
+    .chip-small:active {
       background: var(--primary);
+    }
+
+    .outcome-picker {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .outcome-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .chip {
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      user-select: none;
+      border: 1px solid transparent;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.1s ease;
+    }
+
+    .chip:active {
+      transform: scale(0.96);
+    }
+
+    .chip.success {
+      background: rgba(16, 185, 129, 0.15);
+      border-color: rgba(16, 185, 129, 0.35);
+      color: var(--success);
+    }
+    .chip.success:active {
+      background: var(--success);
+      color: white;
+    }
+
+    .chip.failure {
+      background: rgba(239, 68, 68, 0.15);
+      border-color: rgba(239, 68, 68, 0.35);
+      color: var(--failure);
+    }
+    .chip.failure:active {
+      background: var(--failure);
+      color: white;
+    }
+
+    .chip.skip {
+      background: rgba(107, 114, 128, 0.15);
+      border-color: rgba(107, 114, 128, 0.35);
+      color: var(--text-muted);
+    }
+    .chip.skip:active {
+      background: var(--skip);
+      color: white;
     }
 
     .form-actions {
       display: flex;
       gap: 10px;
-      margin-top: 16px;
-    }
-
-    .submit-btn {
-      flex: 1;
-      padding: 14px;
-      background: var(--primary);
-      color: white;
-      border: none;
-      border-radius: 8px;
-      font-size: 1rem;
-      font-weight: 600;
-      cursor: pointer;
-    }
-
-    .submit-btn:hover {
-      background: var(--primary-hover);
+      margin-top: 6px;
     }
 
     .delete-btn {
-      padding: 14px 16px;
+      width: 100%;
+      padding: 14px;
       background: rgba(239, 68, 68, 0.15);
       color: var(--failure);
       border: 1px solid var(--failure);
       border-radius: 8px;
-      font-size: 0.9rem;
+      font-size: 0.95rem;
       font-weight: 600;
       cursor: pointer;
       display: none;
+      text-align: center;
     }
 
     .delete-btn:hover {
       background: rgba(239, 68, 68, 0.25);
+    }
+
+    .menu-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .menu-action-btn {
+      width: 100%;
+      padding: 14px 16px;
+      background: var(--input-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--text);
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      text-align: left;
+      transition: all 0.15s ease;
+    }
+
+    .menu-action-btn:hover {
+      border-color: var(--primary);
+      background: rgba(59, 130, 246, 0.1);
+    }
+
+    .menu-action-btn:active {
+      transform: scale(0.99);
+    }
+
+    .menu-action-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .menu-action-sub {
+      font-size: 0.78rem;
+      font-weight: 400;
+      color: var(--text-muted);
+    }
+
+    .menu-action-icon {
+      color: var(--primary);
+      font-size: 1.1rem;
+      font-weight: 700;
     }
   </style>
 </head>
@@ -413,16 +495,50 @@
   <div class="app-container">
     <header>
       <h1>Climbing Log</h1>
-      <button id="exportCsvBtn" class="export-btn">Export CSV</button>
+      <button id="openMenuBtn" class="menu-btn" aria-label="Data & Backup Menu" title="Data & Backup">
+        <svg viewBox="0 0 24 24">
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </button>
     </header>
 
     <main id="mainContent">
       <div id="historyList" class="history-list"></div>
     </main>
 
-    <button id="openModalBtn" class="fab">+</button>
+    <button id="openModalBtn" class="fab" aria-label="New Entry">+</button>
 
-    <!-- Entry Form Modal -->
+    <div id="menuModalOverlay" class="modal-overlay">
+      <div class="modal-sheet">
+        <div class="modal-header">
+          <span class="modal-title">Data & Backup</span>
+          <button id="closeMenuModalBtn" class="close-btn">&times;</button>
+        </div>
+
+        <div class="menu-actions">
+          <button type="button" id="exportJsonBtn" class="menu-action-btn">
+            <div class="menu-action-info">
+              <span>Export Backup (JSON)</span>
+              <span class="menu-action-sub">Download versioned file with all attempts</span>
+            </div>
+            <span class="menu-action-icon">&uarr;</span>
+          </button>
+
+          <button type="button" id="importJsonBtn" class="menu-action-btn">
+            <div class="menu-action-info">
+              <span>Import Backup (JSON)</span>
+              <span class="menu-action-sub">Restore attempts from a backup file</span>
+            </div>
+            <span class="menu-action-icon">&darr;</span>
+          </button>
+        </div>
+
+        <input type="file" id="importFileInput" accept=".json,application/json" style="display: none;" />
+      </div>
+    </div>
+
     <div id="modalOverlay" class="modal-overlay">
       <div class="modal-sheet">
         <div class="modal-header">
@@ -431,48 +547,51 @@
         </div>
 
         <form id="entryForm">
-          <input type="hidden" id="entryId" />
-          
-          <!-- Location Input -->
           <div class="form-group">
             <label for="locationInput">Location</label>
-            <input type="text" id="locationInput" placeholder="e.g. Element Boulders" autocomplete="off" required />
+            <input type="text" id="locationInput" placeholder="e.g. element boulders" autocomplete="off" required />
             <div id="locationChips" class="chips-container"></div>
           </div>
 
-          <!-- Grade Input -->
           <div class="form-group">
             <label for="gradeInput">Grade</label>
-            <input type="text" id="gradeInput" placeholder="e.g. V5, 6, 7" autocomplete="off" required />
+            <input type="text" id="gradeInput" placeholder="e.g. v5, 6, 7" autocomplete="off" required />
             <div id="gradeChips" class="chips-container"></div>
           </div>
 
-          <!-- Outcome Switch -->
           <div class="form-group">
-            <label>Outcome</label>
-            <div class="toggle-group">
-              <button type="button" class="toggle-btn selected" data-value="Success">Success</button>
-              <button type="button" class="toggle-btn" data-value="Failure">Failure</button>
+            <label>Outcome (Tap to Log)</label>
+            <div class="outcome-picker">
+              <div class="outcome-row">
+                <span class="chip success" data-outcome="flash">flash</span>
+                <span class="chip success" data-outcome="sent">sent</span>
+              </div>
+              <div class="outcome-row">
+                <span class="chip failure" data-outcome="grip out">grip out</span>
+                <span class="chip failure" data-outcome="moving hand">moving hand</span>
+                <span class="chip failure" data-outcome="no stick">no stick</span>
+                <span class="chip failure" data-outcome="missed move">missed move</span>
+              </div>
+              <div class="outcome-row">
+                <span class="chip failure" data-outcome="foot off">foot off</span>
+                <span class="chip failure" data-outcome="swung off">swung off</span>
+              </div>
+              <div class="outcome-row">
+                <span class="chip failure" data-outcome="scared">scared</span>
+                <span class="chip failure" data-outcome="pumped">pumped</span>
+              </div>
+              <div class="outcome-row">
+                <span class="chip failure" data-outcome="unclear">unclear</span>
+              </div>
+              <div class="outcome-row">
+                <span class="chip skip" data-outcome="working">working</span>
+                <span class="chip skip" data-outcome="voided">voided</span>
+              </div>
             </div>
           </div>
 
-          <!-- Success Type Field -->
-          <div class="form-group" id="successGroup">
-            <label for="successInput">Success Type</label>
-            <input type="text" id="successInput" placeholder="e.g. flash, send, repeat" autocomplete="off" />
-            <div id="successChips" class="chips-container"></div>
-          </div>
-
-          <!-- Primary Failure Reason Field -->
-          <div class="form-group" id="reasonGroup" style="display: none;">
-            <label for="reasonInput">Primary Failure Reason</label>
-            <input type="text" id="reasonInput" placeholder="e.g. sloper power, crimp, balance" autocomplete="off" />
-            <div id="reasonChips" class="chips-container"></div>
-          </div>
-
           <div class="form-actions">
-            <button type="button" id="deleteBtn" class="delete-btn">Delete</button>
-            <button type="submit" id="submitBtn" class="submit-btn">Save Entry</button>
+            <button type="button" id="deleteBtn" class="delete-btn">Delete Entry</button>
           </div>
         </form>
       </div>
@@ -481,39 +600,81 @@
 
   <script>
     const STORAGE_KEY = 'climb_attempts_history';
+    const CURRENT_VERSION = '1.0.0';
+
+    const OUTCOME_CATEGORY_MAP = {
+      'flash': 'success',
+      'sent': 'success',
+      'grip out': 'failure',
+      'moving hand': 'failure',
+      'no stick': 'failure',
+      'missed move': 'failure',
+      'foot off': 'failure',
+      'swung off': 'failure',
+      'scared': 'failure',
+      'pumped': 'failure',
+      'unclear': 'failure',
+      'working': 'skip',
+      'voided': 'skip',
+      'warmup': 'success',
+      'power': 'failure',
+      'body tension': 'failure',
+      'crimp': 'failure',
+      'pocket': 'failure',
+      'foot slipped': 'failure',
+      'foot out': 'failure',
+      'hand off moving': 'failure'
+    };
 
     let history = [];
-    let selectedOutcome = 'Success';
     let editingId = null;
 
     const historyList = document.getElementById('historyList');
-    const mainContent = document.getElementById('mainContent');
     const openModalBtn = document.getElementById('openModalBtn');
     const closeModalBtn = document.getElementById('closeModalBtn');
     const modalOverlay = document.getElementById('modalOverlay');
-    const entryForm = document.getElementById('entryForm');
     const modalTitle = document.getElementById('modalTitle');
     const deleteBtn = document.getElementById('deleteBtn');
-    const submitBtn = document.getElementById('submitBtn');
-    const exportCsvBtn = document.getElementById('exportCsvBtn');
+
+    const openMenuBtn = document.getElementById('openMenuBtn');
+    const closeMenuModalBtn = document.getElementById('closeMenuModalBtn');
+    const menuModalOverlay = document.getElementById('menuModalOverlay');
+    const exportJsonBtn = document.getElementById('exportJsonBtn');
+    const importJsonBtn = document.getElementById('importJsonBtn');
+    const importFileInput = document.getElementById('importFileInput');
 
     const locationInput = document.getElementById('locationInput');
     const gradeInput = document.getElementById('gradeInput');
-    const successInput = document.getElementById('successInput');
-    const reasonInput = document.getElementById('reasonInput');
-    const successGroup = document.getElementById('successGroup');
-    const reasonGroup = document.getElementById('reasonGroup');
-
     const locationChips = document.getElementById('locationChips');
     const gradeChips = document.getElementById('gradeChips');
-    const successChips = document.getElementById('successChips');
-    const reasonChips = document.getElementById('reasonChips');
+    const outcomeChips = document.querySelectorAll('.outcome-picker .chip');
 
-    const toggleBtns = document.querySelectorAll('.toggle-btn');
+    function generateId() {
+      if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+        return crypto.randomUUID();
+      }
+      return 'id_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+    }
 
     function loadHistory() {
       const data = localStorage.getItem(STORAGE_KEY);
-      history = data ? JSON.parse(data) : [];
+      if (!data) {
+        history = [];
+        return;
+      }
+      try {
+        const parsed = JSON.parse(data);
+        const rawAttempts = Array.isArray(parsed) ? parsed : (parsed.attempts || parsed.entries || []);
+        history = rawAttempts.map(item => ({
+          id: item.id || generateId(),
+          loggedAt: item.loggedAt || item.timestamp || new Date().toISOString(),
+          location: String(item.location || 'Unknown').trim(),
+          grade: String(item.grade || '').trim(),
+          outcome: String(item.outcome || '').trim()
+        }));
+      } catch (e) {
+        history = [];
+      }
     }
 
     function saveHistory() {
@@ -523,7 +684,6 @@
     function resolveExistingCasing(fieldKey, typedValue) {
       const trimmed = typedValue.trim();
       if (!trimmed) return '';
-
       for (let i = history.length - 1; i >= 0; i--) {
         const val = history[i][fieldKey];
         if (val && typeof val === 'string' && val.trim().toLowerCase() === trimmed.toLowerCase()) {
@@ -533,31 +693,83 @@
       return trimmed;
     }
 
-    function exportToCSV() {
+    function exportToJSON() {
       if (history.length === 0) {
-        alert('No history entries to export.');
+        alert('No attempts to export.');
         return;
       }
-
-      const headers = ['Timestamp', 'Location', 'Grade', 'Outcome', 'Type / Reason'];
-      const rows = history.map(item => [
-        `"${item.timestamp}"`,
-        `"${(item.location || '').replace(/"/g, '""')}"`,
-        `"${(item.grade || '').replace(/"/g, '""')}"`,
-        `"${(item.outcome || '').replace(/"/g, '""')}"`,
-        `"${(item.outcome === 'Success' ? (item.successType || 'send') : (item.reason || '')).replace(/"/g, '""')}"`
-      ]);
-
-      const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const backupPayload = {
+        version: CURRENT_VERSION,
+        exportedAt: new Date().toISOString(),
+        attempts: history
+      };
+      const jsonContent = JSON.stringify(backupPayload, null, 2);
+      const blob = new Blob([jsonContent], { type: 'application/json;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
-      
       const link = document.createElement('a');
       link.setAttribute('href', url);
-      link.setAttribute('download', `climbing_log_${new Date().toISOString().slice(0, 10)}.csv`);
+      link.setAttribute('download', `clog_backup_${new Date().toISOString().slice(0, 10)}.json`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      closeMenuModal();
+    }
+
+    function handleJSONImport(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const parsed = JSON.parse(e.target.result);
+          const importedAttempts = Array.isArray(parsed) ? parsed : (parsed.attempts || parsed.entries || []);
+          const validAttempts = importedAttempts.filter(item => {
+            return item && (item.loggedAt || item.timestamp) && item.location && item.grade && item.outcome;
+          });
+
+          if (validAttempts.length === 0) {
+            alert('No valid climbing attempts found in the selected file.');
+            return;
+          }
+
+          if (history.length > 0) {
+            const confirmReplace = confirm(`Importing this backup will completely REPLACE your existing ${history.length} local entries with the ${validAttempts.length} entries from the file.\n\nProceed?`);
+            if (!confirmReplace) {
+              importFileInput.value = '';
+              return;
+            }
+          }
+
+          const seenIds = new Set();
+          history = validAttempts.map(entry => {
+            let id = entry.id;
+            if (!id || seenIds.has(String(id))) {
+              id = generateId();
+            }
+            seenIds.add(String(id));
+            return {
+              id: id,
+              loggedAt: entry.loggedAt || entry.timestamp,
+              location: String(entry.location).trim(),
+              grade: String(entry.grade).trim(),
+              outcome: String(entry.outcome).trim()
+            };
+          });
+
+          history.sort((a, b) => new Date(a.loggedAt) - new Date(b.loggedAt));
+          saveHistory();
+          renderHistory();
+          closeMenuModal();
+          alert(`Successfully imported ${validAttempts.length} attempts.`);
+        } catch (err) {
+          alert('Failed to import JSON file: ' + err.message);
+        } finally {
+          importFileInput.value = '';
+        }
+      };
+      reader.readAsText(file);
     }
 
     function getAutocompleteValues(fieldKey, filterText = '') {
@@ -565,36 +777,20 @@
       const matching = [];
       const recent = [];
 
-      let defaultList = [];
-      if (fieldKey === 'successType') {
-        defaultList = ['flash', 'send', 'repeat'];
-      }
-
       for (let i = history.length - 1; i >= 0; i--) {
         if (editingId && history[i].id === editingId) continue;
         const val = history[i][fieldKey];
         if (val && typeof val === 'string') {
           const trimmed = val.trim();
-          if (trimmed.length > 0) {
-            const exists = recent.some(r => r.toLowerCase() === trimmed.toLowerCase());
-            if (!exists) {
-              recent.push(trimmed);
-            }
+          if (trimmed.length > 0 && !recent.some(r => r.toLowerCase() === trimmed.toLowerCase())) {
+            recent.push(trimmed);
           }
         }
       }
 
-      defaultList.forEach(d => {
-        const exists = recent.some(r => r.toLowerCase() === d.toLowerCase());
-        if (!exists) {
-          recent.push(d);
-        }
-      });
-
       recent.forEach(trimmed => {
         if (query === '' || trimmed.toLowerCase().includes(query)) {
-          const alreadyMatched = matching.some(m => m.toLowerCase() === trimmed.toLowerCase());
-          if (!alreadyMatched) {
+          if (!matching.some(m => m.toLowerCase() === trimmed.toLowerCase())) {
             matching.push(trimmed);
           }
         }
@@ -603,8 +799,7 @@
       const results = [...matching];
       for (let i = 0; i < recent.length && results.length < 3; i++) {
         const item = recent[i];
-        const alreadyAdded = results.some(r => r.toLowerCase() === item.toLowerCase());
-        if (!alreadyAdded) {
+        if (!results.some(r => r.toLowerCase() === item.toLowerCase())) {
           results.push(item);
         }
       }
@@ -615,10 +810,9 @@
     function updateChips(fieldKey, inputElem, containerElem) {
       containerElem.innerHTML = '';
       const items = getAutocompleteValues(fieldKey, inputElem.value);
-
       items.forEach(text => {
         const chip = document.createElement('span');
-        chip.className = 'chip';
+        chip.className = 'chip-small';
         chip.textContent = text;
         chip.addEventListener('click', () => {
           inputElem.value = text;
@@ -641,7 +835,7 @@
 
       reversedHistory.forEach(entry => {
         const loc = entry.location || 'Unknown Location';
-        const dateObj = new Date(entry.timestamp);
+        const dateObj = new Date(entry.loggedAt);
         const dateStr = dateObj.toLocaleDateString(undefined, {
           month: 'short', day: 'numeric', year: 'numeric'
         });
@@ -676,22 +870,20 @@
           card.className = 'entry-card';
           card.dataset.entryId = entry.id;
 
-          const timeStr = new Date(entry.timestamp).toLocaleTimeString(undefined, {
+          const timeStr = new Date(entry.loggedAt).toLocaleTimeString(undefined, {
             hour: '2-digit', minute: '2-digit', hour12: false
           });
 
-          const isSuccess = entry.outcome === 'Success';
-          const successDisplay = entry.successType || 'send';
-          const failureDisplay = entry.reason || 'failure';
+          const cat = OUTCOME_CATEGORY_MAP[entry.outcome] || 'failure';
+          let badgeClass = 'entry-status-gray';
+          if (cat === 'success') badgeClass = 'entry-status-green';
+          if (cat === 'failure') badgeClass = 'entry-status-red';
 
           card.innerHTML = `
             <div class="entry-left">
               <span class="entry-time">${timeStr}</span>
               <span class="grade-badge">${escapeHtml(entry.grade)}</span>
-              ${isSuccess 
-                ? `<span class="entry-status-green">${escapeHtml(successDisplay)}</span>` 
-                : `<span class="entry-reason-red">${escapeHtml(failureDisplay)}</span>`
-              }
+              <span class="entry-status-badge ${badgeClass}">${escapeHtml(entry.outcome)}</span>
             </div>
             <div class="entry-right">
               <button type="button" class="edit-btn" data-id="${entry.id}">Edit</button>
@@ -713,35 +905,20 @@
       return (str || '').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     }
 
+    function openMenuModal() { menuModalOverlay.classList.add('active'); }
+    function closeMenuModal() { menuModalOverlay.classList.remove('active'); }
+
     function openModal() {
       editingId = null;
       modalTitle.textContent = 'New Entry';
       deleteBtn.style.display = 'none';
-      submitBtn.textContent = 'Save Entry';
 
       const lastEntry = history.length > 0 ? history[history.length - 1] : null;
-
-      if (lastEntry) {
-        locationInput.value = lastEntry.location || '';
-        gradeInput.value = lastEntry.grade || '';
-        selectedOutcome = lastEntry.outcome || 'Success';
-        successInput.value = lastEntry.successType || 'send';
-        reasonInput.value = lastEntry.reason || '';
-      } else {
-        locationInput.value = '';
-        gradeInput.value = '';
-        selectedOutcome = 'Success';
-        successInput.value = 'send';
-        reasonInput.value = '';
-      }
-
-      updateOutcomeToggleUI();
+      locationInput.value = lastEntry ? lastEntry.location || '' : '';
+      gradeInput.value = lastEntry ? lastEntry.grade || '' : '';
 
       updateChips('location', locationInput, locationChips);
       updateChips('grade', gradeInput, gradeChips);
-      updateChips('successType', successInput, successChips);
-      updateChips('reason', reasonInput, reasonChips);
-
       modalOverlay.classList.add('active');
     }
 
@@ -752,21 +929,12 @@
       editingId = entry.id;
       modalTitle.textContent = 'Edit Entry';
       deleteBtn.style.display = 'block';
-      submitBtn.textContent = 'Save Edits';
 
       locationInput.value = entry.location || '';
       gradeInput.value = entry.grade || '';
-      selectedOutcome = entry.outcome || 'Success';
-      successInput.value = entry.successType || 'send';
-      reasonInput.value = entry.reason || '';
-
-      updateOutcomeToggleUI();
 
       updateChips('location', locationInput, locationChips);
       updateChips('grade', gradeInput, gradeChips);
-      updateChips('successType', successInput, successChips);
-      updateChips('reason', reasonInput, reasonChips);
-
       modalOverlay.classList.add('active');
     }
 
@@ -775,50 +943,14 @@
       editingId = null;
     }
 
-    function updateOutcomeToggleUI() {
-      toggleBtns.forEach(btn => {
-        if (btn.dataset.value === selectedOutcome) {
-          btn.classList.add('selected');
-        } else {
-          btn.classList.remove('selected');
-        }
-      });
-
-      if (selectedOutcome === 'Failure') {
-        successGroup.style.display = 'none';
-        reasonGroup.style.display = 'block';
-      } else {
-        successGroup.style.display = 'block';
-        reasonGroup.style.display = 'none';
-      }
-    }
-
-    openModalBtn.addEventListener('click', openModal);
-    closeModalBtn.addEventListener('click', closeModal);
-    modalOverlay.addEventListener('click', (e) => {
-      if (e.target === modalOverlay) closeModal();
-    });
-    exportCsvBtn.addEventListener('click', exportToCSV);
-
-    toggleBtns.forEach(btn => {
-      btn.addEventListener('click', () => {
-        selectedOutcome = btn.dataset.value;
-        updateOutcomeToggleUI();
-      });
-    });
-
-    locationInput.addEventListener('input', () => updateChips('location', locationInput, locationChips));
-    gradeInput.addEventListener('input', () => updateChips('grade', gradeInput, gradeChips));
-    successInput.addEventListener('input', () => updateChips('successType', successInput, successChips));
-    reasonInput.addEventListener('input', () => updateChips('reason', reasonInput, reasonChips));
-
-    entryForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-
+    function handleOutcomeSelect(chosenOutcome) {
       const locVal = resolveExistingCasing('location', locationInput.value);
       const gradeVal = resolveExistingCasing('grade', gradeInput.value);
-      const successVal = selectedOutcome === 'Success' ? resolveExistingCasing('successType', successInput.value || 'send') : '';
-      const reasonVal = selectedOutcome === 'Failure' ? resolveExistingCasing('reason', reasonInput.value) : '';
+
+      if (!locVal || !gradeVal) {
+        alert('Please fill in both Location and Grade before selecting an outcome.');
+        return;
+      }
 
       let targetId = editingId;
       const isEditing = Boolean(editingId);
@@ -828,46 +960,46 @@
         if (index !== -1) {
           history[index].location = locVal;
           history[index].grade = gradeVal;
-          history[index].outcome = selectedOutcome;
-          history[index].successType = successVal;
-          history[index].reason = reasonVal;
+          history[index].outcome = chosenOutcome;
         }
       } else {
-        targetId = Date.now();
-        const newEntry = {
+        targetId = generateId();
+        history.push({
           id: targetId,
-          timestamp: new Date().toISOString(),
+          loggedAt: new Date().toISOString(),
           location: locVal,
           grade: gradeVal,
-          outcome: selectedOutcome,
-          successType: successVal,
-          reason: reasonVal
-        };
-        history.push(newEntry);
+          outcome: chosenOutcome
+        });
       }
 
       saveHistory();
       renderHistory();
       closeModal();
+    }
 
-      // Ensure proper scroll targeting after DOM update
-      setTimeout(() => {
-        if (isEditing) {
-          const cardElem = document.querySelector(`[data-entry-id="${targetId}"]`);
-          if (cardElem) {
-            const groupContainer = cardElem.closest('.group-container');
-            const targetToScroll = groupContainer ? groupContainer : cardElem;
-            targetToScroll.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          }
-        } else {
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-      }, 50);
+    openModalBtn.addEventListener('click', openModal);
+    closeModalBtn.addEventListener('click', closeModal);
+    modalOverlay.addEventListener('click', (e) => { if (e.target === modalOverlay) closeModal(); });
+
+    openMenuBtn.addEventListener('click', openMenuModal);
+    closeMenuModalBtn.addEventListener('click', closeMenuModal);
+    menuModalOverlay.addEventListener('click', (e) => { if (e.target === menuModalOverlay) closeMenuModal(); });
+
+    exportJsonBtn.addEventListener('click', exportToJSON);
+    importJsonBtn.addEventListener('click', () => importFileInput.click());
+    importFileInput.addEventListener('change', handleJSONImport);
+
+    locationInput.addEventListener('input', () => updateChips('location', locationInput, locationChips));
+    gradeInput.addEventListener('input', () => updateChips('grade', gradeInput, gradeChips));
+
+    outcomeChips.forEach(chip => {
+      chip.addEventListener('click', () => handleOutcomeSelect(chip.dataset.outcome));
     });
 
     deleteBtn.addEventListener('click', () => {
       if (editingId) {
-        history = history.history ? history.filter(item => item.id !== editingId) : history.filter(item => item.id !== editingId);
+        history = history.filter(item => item.id !== editingId);
         saveHistory();
         renderHistory();
         closeModal();
