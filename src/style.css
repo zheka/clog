@@ -104,7 +104,7 @@ main {
 .history-list {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 8px;
 }
 
 .empty-state {
@@ -114,10 +114,14 @@ main {
 }
 
 /* Group Container by Location & Kind */
+/* Each session is a frame; its attempts are borderless blocks inside it */
 .group-container {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 0 12px;
 }
 
 .group-header {
@@ -127,7 +131,7 @@ main {
   font-size: 0.95rem;
   font-weight: 700;
   color: var(--primary);
-  padding: 8px 0;
+  padding: 12px 0;
   text-transform: capitalize;
   cursor: pointer;
   user-select: none;
@@ -166,31 +170,40 @@ main {
   transform: rotate(-90deg);
 }
 
+/* Expands and collapses by animating the grid row from 1fr to 0fr: no height limit, so a
+   session of any length is shown in full. */
 .group-body {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition:
+    grid-template-rows 0.25s ease-out,
+    opacity 0.2s ease-out,
+    padding-bottom 0.25s ease-out;
+  opacity: 1;
+  padding-bottom: 12px;
+}
+
+.group-entries {
+  min-height: 0;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  overflow: hidden;
-  transition:
-    max-height 0.25s ease-out,
-    opacity 0.2s ease-out;
-  max-height: 2000px;
-  opacity: 1;
 }
 
 .group-container.collapsed .group-body {
-  max-height: 0;
+  grid-template-rows: 0fr;
   opacity: 0;
-  gap: 0;
+  padding-bottom: 0;
   pointer-events: none;
 }
 
 /* Entry Card */
 .entry-card {
-  background: var(--card-bg);
-  border-radius: 12px;
+  background: var(--input-bg);
+  border-radius: 10px;
   padding: 12px 14px;
-  border: 1px solid var(--border);
+  border: none;
   display: flex;
   flex-direction: column;
   gap: 8px;

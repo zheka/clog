@@ -132,6 +132,17 @@ describe('loading and history list', () => {
       `${day('2026-11-15T12:00:00Z')} • A • boulder`,
     );
     expect(q('.group-header', groups[1]).textContent).toContain('B • route');
+    // expanding has no height limit (a long session is shown in full)
+    const body = (g: Element) => getComputedStyle(q('.group-body', g));
+    expect([body(groups[0]).gridTemplateRows, body(groups[1]).gridTemplateRows]).toEqual([
+      '1fr',
+      '0fr',
+    ]);
+    expect(body(groups[0]).maxHeight).toMatch(/^(none|)$/);
+    // each session is a frame, 8px apart; attempts inside are borderless
+    expect(getComputedStyle($('historyList')).rowGap).toBe('8px');
+    expect(getComputedStyle(groups[0]).borderTopStyle).toBe('solid');
+    expect(getComputedStyle(q('.entry-card', groups[2])).borderTopStyle).toMatch(/^(none|)$/);
     // header style: no line under it; the chevron is an outline in the text colour
     const header = getComputedStyle(q('.group-header', groups[0]));
     expect(header.borderBottomStyle).toMatch(/^(none|)$/);

@@ -428,7 +428,10 @@ Rules for every chip row:
   activity lists as a badge** in config order, and the outcome badge in its category colour.
   No tags; fields the activity doesn't list are not shown. Decorations such as a `°` suffix
   for the angle will come from field properties.
-- Only the newest group starts expanded.
+- Each group is a **frame**, 8px apart; its attempts are borderless blocks inside it. A
+  collapsed group is just its framed header. Expanding has no height limit, so long sessions
+  are shown in full.
+- Only the newest group starts expanded. Session summaries (counts, send rate) are for later.
 - Unknown outcomes can't appear: imports and saved data are checked, and the form only offers
   outcomes from the list.
 
