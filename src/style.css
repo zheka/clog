@@ -14,6 +14,11 @@
   --chip-border: #4a5568;
 }
 
+/* The hidden attribute always wins, even over rules that set display (e.g. .problem-screen). */
+[hidden] {
+  display: none !important;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;

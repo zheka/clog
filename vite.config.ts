@@ -5,5 +5,7 @@ export default defineConfig({
   base: '/clog/',
   test: {
     include: ['src/**/*.test.ts'],
+    // Process CSS so UI tests can apply the real stylesheet (style.css?raw).
+    css: true,
   },
 });

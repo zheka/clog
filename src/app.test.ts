@@ -5,6 +5,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import indexHtml from '../index.html?raw';
+import styleCss from './style.css?raw';
 
 const STORAGE_KEY = 'clog';
 const LEGACY_KEYS = ['climb_attempts_history', 'climb_outcomes_registry'];
@@ -68,6 +69,8 @@ async function start(
   raw: Record<string, string> = {},
 ) {
   document.body.innerHTML = new DOMParser().parseFromString(indexHtml, 'text/html').body.innerHTML;
+  // Apply the real stylesheet, so tests can check what is actually visible.
+  document.head.innerHTML = `<style>${styleCss}</style>`;
   localStorage.clear();
   for (const [key, value] of Object.entries(raw)) localStorage.setItem(key, value);
   if (attempts !== undefined || outcomes !== null) {
@@ -747,11 +750,25 @@ describe('saved data that cannot be used', () => {
     expect(problemsShown()).toBe('attempt #1 (id a1…): outcome "mystery" is not defined');
   });
 
-  it('does not show for valid or missing data', async () => {
+  const visible = (id: string) => getComputedStyle($(id)).display !== 'none';
+
+  it('is not visible for valid or missing data, and the app is', async () => {
     await start([attempt()]);
-    expect($('problemScreen').hidden).toBe(true);
+    expect(visible('problemScreen')).toBe(false);
+    expect(visible('mainContent')).toBe(true);
     await start(undefined, null);
-    expect($('problemScreen').hidden).toBe(true);
+    expect(visible('problemScreen')).toBe(false);
+  });
+
+  it('is the only thing visible when the data cannot be used, until starting fresh', async () => {
+    await start(undefined, null, { clog: '{oops' });
+    expect(visible('problemScreen')).toBe(true);
+    expect(visible('mainContent')).toBe(false);
+    expect(visible('openModalBtn')).toBe(false);
+    $('startFreshBtn').click();
+    $('startFreshBtn').click();
+    expect(visible('problemScreen')).toBe(false);
+    expect(visible('mainContent')).toBe(true);
   });
 
   it('downloads the saved data unchanged and keeps it', async () => {
