@@ -55,10 +55,7 @@ export function mountHistoryView(store: Store, onEdit: (id: string) => void): vo
 
     const bodyEl = document.createElement('div');
     bodyEl.className = 'group-body';
-    const entriesEl = document.createElement('div');
-    entriesEl.className = 'group-entries';
-    session.entries.forEach((entry) => entriesEl.appendChild(renderCard(entry, outcomes)));
-    bodyEl.appendChild(entriesEl);
+    session.entries.forEach((entry) => bodyEl.appendChild(renderCard(entry, outcomes)));
     groupEl.appendChild(bodyEl);
 
     return groupEl;

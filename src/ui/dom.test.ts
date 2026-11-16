@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { twoTapButton } from './dom';
+import { trackScrollFades, twoTapButton, updateScrollFades } from './dom';
 
 describe('twoTapButton', () => {
   afterEach(() => vi.useRealTimers());
@@ -23,5 +23,43 @@ describe('twoTapButton', () => {
     button.click();
     expect(action).toHaveBeenCalledTimes(1);
     expect(button.textContent).toBe('Delete');
+  });
+});
+
+describe('scroll fades', () => {
+  /** A row whose content is `content` px wide, shown in `width` px, scrolled to `left`. */
+  function row(content: number, width: number) {
+    const el = document.createElement('div');
+    Object.defineProperty(el, 'scrollWidth', { value: content });
+    Object.defineProperty(el, 'clientWidth', { value: width });
+    return el;
+  }
+  const fades = (el: HTMLElement) =>
+    ['scroll-fade-left', 'scroll-fade-right'].filter((c) => el.classList.contains(c));
+
+  it('fades only the sides with more to swipe to', () => {
+    const el = row(600, 300);
+    updateScrollFades(el);
+    expect(fades(el)).toEqual(['scroll-fade-right']);
+    el.scrollLeft = 150;
+    updateScrollFades(el);
+    expect(fades(el)).toEqual(['scroll-fade-left', 'scroll-fade-right']);
+    el.scrollLeft = 300;
+    updateScrollFades(el);
+    expect(fades(el)).toEqual(['scroll-fade-left']);
+  });
+
+  it('shows no fade when everything fits', () => {
+    const el = row(200, 300);
+    updateScrollFades(el);
+    expect(fades(el)).toEqual([]);
+  });
+
+  it('updates while scrolling', () => {
+    const el = row(600, 300);
+    trackScrollFades(el);
+    el.scrollLeft = 300;
+    el.dispatchEvent(new Event('scroll'));
+    expect(fades(el)).toEqual(['scroll-fade-left']);
   });
 });

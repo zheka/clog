@@ -365,7 +365,8 @@ Every input, outcome included, is **text first with a chip row below**.
   cover the fields and their chips.
 - The keyboard's action key is **Done**: it closes the keyboard, nothing is saved.
 - Each chip row is **one line that scrolls sideways** (it never wraps), with at most
-  `maxChips` (8) chips. Chip sizes are unchanged.
+  `maxChips` (8) chips. Chip sizes are unchanged. A **fade at the edge** shows on whichever side
+  has more chips to swipe to.
 
 Rules for every chip row:
 
@@ -429,8 +430,8 @@ Rules for every chip row:
   No tags; fields the activity doesn't list are not shown. Decorations such as a `°` suffix
   for the angle will come from field properties.
 - Each group is a **frame**, 8px apart; its attempts are borderless blocks inside it. A
-  collapsed group is just its framed header. Expanding has no height limit, so long sessions
-  are shown in full.
+  collapsed group is just its framed header. Expanding and collapsing are instant (no
+  animation) and have no height limit, so long sessions are shown in full.
 - Only the newest group starts expanded. Session summaries (counts, send rate) are for later.
 - Unknown outcomes can't appear: imports and saved data are checked, and the form only offers
   outcomes from the list.
@@ -463,7 +464,9 @@ Rules for every chip row:
 ## Open questions
 
 - After real-life testing: the top sheet, outcomes on one line or two, chips above the fields,
-  the chip count. Field properties (`suffix`, labels…) when a need shows up.
+  the chip count, whether the edge fade is clear enough (or needs a small arrow).
+- Long headers (history and context bar) and long card values wrap for now; shortening with
+  "…" was discussed and postponed. Field properties (`suffix`, labels…) when a need shows up.
 - Editing an entry's time: how to make it unobtrusive.
 - Switching activity in the form loads that activity's previous attempt: confirm.
 - A `style` field for `route`: suspended until needed.

@@ -4,7 +4,13 @@ import { suggestOutcomes, suggestValues, type Scope } from '../core/suggestions'
 import { cleanText, normalizeName } from '../core/text';
 import { CATEGORIES, type Attempt, type Category } from '../core/types';
 import type { Store } from '../store';
-import { byId, closeKeyboardOnDone, twoTapButton } from './dom';
+import {
+  byId,
+  closeKeyboardOnDone,
+  trackScrollFades,
+  twoTapButton,
+  updateScrollFades,
+} from './dom';
 
 /** Within this time since the last attempt, a new entry starts with the context collapsed. */
 const SAME_SESSION_MS = config.sameSessionHours * 60 * 60 * 1000;
@@ -106,6 +112,7 @@ export function mountEntryModal(store: Store): EntryModal {
       const chips = document.createElement('div');
       chips.className = 'chips-container';
       chips.id = `chips-${field}`;
+      trackScrollFades(chips);
       group.append(label, input, chips);
       fieldsContainer.appendChild(group);
       const text: TextInput = { field, input, chips, typed: false };
@@ -163,6 +170,13 @@ export function mountEntryModal(store: Store): EntryModal {
       });
       text.chips.appendChild(chip);
     }
+    showRowStart(text.chips);
+  }
+
+  /** After refilling a chip row: scroll back to its start and update its edge fades. */
+  function showRowStart(row: HTMLElement) {
+    row.scrollLeft = 0;
+    updateScrollFades(row);
   }
 
   function outcomeChip(row: HTMLElement, text: string, category: Category, onTap: () => void) {
@@ -208,6 +222,8 @@ export function mountEntryModal(store: Store): EntryModal {
         chip.dataset.category = category;
       }
     }
+    showRowStart(outcomeChips);
+    showRowStart(newOutcomeChips);
   }
 
   function renderAllChips() {
@@ -326,6 +342,7 @@ export function mountEntryModal(store: Store): EntryModal {
   contextHeader.addEventListener('click', () => {
     setContextExpanded(contextBody.classList.contains('hidden'));
   });
+  for (const row of [location.chips, outcomeChips, newOutcomeChips]) trackScrollFades(row);
   closeKeyboardOnDone(location.input);
   closeKeyboardOnDone(outcomeInput);
   location.input.addEventListener('input', () => {

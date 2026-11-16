@@ -22,6 +22,18 @@ export function downloadFile(fileName: string, content: string, mimeType: string
   URL.revokeObjectURL(url);
 }
 
+/** Updates which sides of a sideways-scrolling row have more content (see .scroll-fade-*). */
+export function updateScrollFades(row: HTMLElement): void {
+  const more = row.scrollWidth - row.clientWidth;
+  row.classList.toggle('scroll-fade-left', row.scrollLeft > 1);
+  row.classList.toggle('scroll-fade-right', more - row.scrollLeft > 1);
+}
+
+/** Keeps a row's edge fades in sync with its scrolling; call `updateScrollFades` after filling it. */
+export function trackScrollFades(row: HTMLElement): void {
+  row.addEventListener('scroll', () => updateScrollFades(row), { passive: true });
+}
+
 /** The keyboard's action key shows "Done" and closes the keyboard; nothing is submitted. */
 export function closeKeyboardOnDone(input: HTMLInputElement): void {
   input.enterKeyHint = 'done';

@@ -163,39 +163,22 @@ main {
   fill: none;
   stroke-linecap: round;
   stroke-linejoin: round;
-  transition: transform 0.2s ease;
 }
 
 .group-container.collapsed .group-chevron {
   transform: rotate(-90deg);
 }
 
-/* Expands and collapses by animating the grid row from 1fr to 0fr: no height limit, so a
-   session of any length is shown in full. */
+/* Expands and collapses instantly; no height limit, so a session of any length is shown */
 .group-body {
-  display: grid;
-  grid-template-rows: 1fr;
-  transition:
-    grid-template-rows 0.25s ease-out,
-    opacity 0.2s ease-out,
-    padding-bottom 0.25s ease-out;
-  opacity: 1;
-  padding-bottom: 12px;
-}
-
-.group-entries {
-  min-height: 0;
-  overflow: hidden;
   display: flex;
   flex-direction: column;
   gap: 8px;
+  padding-bottom: 12px;
 }
 
 .group-container.collapsed .group-body {
-  grid-template-rows: 0fr;
-  opacity: 0;
-  padding-bottom: 0;
-  pointer-events: none;
+  display: none;
 }
 
 /* Entry Card */
@@ -519,6 +502,34 @@ input[type='number']:focus {
 
 .outcome-row {
   min-height: 40px;
+}
+
+/* A fade on the side(s) of a chip row with more chips to swipe to */
+.scroll-fade-right {
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent);
+  mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent);
+}
+
+.scroll-fade-left {
+  -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 32px), transparent);
+  mask-image: linear-gradient(to left, #000 calc(100% - 32px), transparent);
+}
+
+.scroll-fade-left.scroll-fade-right {
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 32px,
+    #000 calc(100% - 32px),
+    transparent
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 32px,
+    #000 calc(100% - 32px),
+    transparent
+  );
 }
 
 /* The new-outcome row takes no space unless a new name is typed */
