@@ -14,7 +14,7 @@ describe('groupIntoSessions', () => {
     const c = makeAttempt({ loggedAt: '2026-11-15T12:00:00Z' });
     const sessions = groupIntoSessions([a1, a2, b, c]);
 
-    expect(sessions.map((s) => s.entries)).toEqual([[c], [b], [a2, a1]]);
+    expect(sessions.map((s) => s.attempts)).toEqual([[c], [b], [a2, a1]]);
     expect(sessions[2]).toMatchObject({
       location: 'BW Ost',
       activity: 'boulder',

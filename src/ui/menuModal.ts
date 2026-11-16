@@ -41,7 +41,7 @@ export function mountMenuModal(store: Store, updates: Updates): void {
     if (
       existing > 0 &&
       !confirm(
-        `Importing this backup will completely REPLACE your existing ${existing} local entries with the ${backup.attempts.length} entries from the file.\n\nProceed?`,
+        `Importing this backup will completely REPLACE your existing ${existing} local attempts with the ${backup.attempts.length} attempts from the file.\n\nProceed?`,
       )
     ) {
       return;

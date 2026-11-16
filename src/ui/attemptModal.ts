@@ -12,11 +12,11 @@ import {
   updateScrollFades,
 } from './dom';
 
-/** Within this time since the last attempt, a new entry starts with the context collapsed. */
+/** Within this time since the last attempt, a new attempt starts with the context collapsed. */
 const SAME_SESSION_MS = config.sameSessionHours * 60 * 60 * 1000;
 const CATEGORY_MARK: Record<Category, string> = { success: '🟢', failure: '🔴', work: '⚪' };
 
-export interface EntryModal {
+export interface AttemptModal {
   openNew(): void;
   openEdit(id: string): void;
 }
@@ -31,10 +31,10 @@ interface TextInput {
 
 /**
  * The New/Edit Attempt sheet: context (activity, location), the activity's own fields from
- * config.ts, and the outcome. Tapping an outcome chip saves the entry immediately; typing a
+ * config.ts, and the outcome. Tapping an outcome chip saves the attempt immediately; typing a
  * new outcome name offers one chip per category that creates the outcome and saves.
  */
-export function mountEntryModal(store: Store): EntryModal {
+export function mountAttemptModal(store: Store): AttemptModal {
   let editingId: string | null = null;
   let selectedActivity = config.activities[0].name;
   let currentOutcome: string | null = null;
@@ -191,7 +191,7 @@ export function mountEntryModal(store: Store): EntryModal {
   /**
    * No text: recent outcomes. While typing: matching outcomes, and (for a name that doesn't
    * exist yet) a row of its own below with one chip per category, which creates the outcome
-   * and saves the entry.
+   * and saves the attempt.
    */
   function renderOutcomeChips() {
     const { outcomes } = store.getState();
@@ -247,7 +247,7 @@ export function mountEntryModal(store: Store): EntryModal {
 
   // --- open ------------------------------------------------------------------
 
-  /** New entry, prefilled from the previous attempt. */
+  /** New attempt, prefilled from the previous attempt. */
   function openNew() {
     editingId = null;
     title.textContent = 'New Attempt';
@@ -267,23 +267,23 @@ export function mountEntryModal(store: Store): EntryModal {
   }
 
   function openEdit(id: string) {
-    const entry = attempts().find((a) => a.id === id);
-    if (!entry) return;
+    const attempt = attempts().find((a) => a.id === id);
+    if (!attempt) return;
 
-    editingId = entry.id;
+    editingId = attempt.id;
     title.textContent = 'Edit Attempt';
     deleteBtn.style.display = 'block';
 
-    setActivity(entry.activity);
-    fill(entry);
-    currentOutcome = entry.outcome;
+    setActivity(attempt.activity);
+    fill(attempt);
+    currentOutcome = attempt.outcome;
     setContextExpanded(false);
 
     show();
   }
 
   /**
-   * Switching activity: a new entry loads that activity's previous attempt (location and
+   * Switching activity: a new attempt loads that activity's previous attempt (location and
    * fields); when editing, or with no previous attempt, the location and the values of fields
    * both activities have are kept.
    */
@@ -324,7 +324,7 @@ export function mountEntryModal(store: Store): EntryModal {
     close();
   }
 
-  function deleteEntry() {
+  function deleteAttempt() {
     if (!editingId) return;
     store.deleteAttempt(editingId);
     close();
@@ -337,7 +337,7 @@ export function mountEntryModal(store: Store): EntryModal {
   overlay.addEventListener('click', (e) => {
     if (e.target === overlay) close();
   });
-  const resetDelete = twoTapButton(deleteBtn, 'Tap again to delete', deleteEntry);
+  const resetDelete = twoTapButton(deleteBtn, 'Tap again to delete', deleteAttempt);
 
   contextHeader.addEventListener('click', () => {
     setContextExpanded(contextBody.classList.contains('hidden'));

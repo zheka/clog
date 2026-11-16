@@ -40,7 +40,7 @@ src/
     backup.ts           JSON backup format "clog 0.1.0" (export, strict import)
   ui/
     historyView.ts      the attempt list
-    entryModal.ts       new/edit entry sheet
+    attemptModal.ts     new/edit attempt sheet
     menuModal.ts        backup menu
     problemScreen.ts    shown instead of the app when saved data can't be used
   pwa.ts              offline support, updates, persistent storage

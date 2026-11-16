@@ -29,7 +29,7 @@ describe('validateConfig', () => {
     expect(problems({ fields: { grade: {}, '2nd': {} } })).toHaveLength(1);
   });
 
-  it('rejects undefined, repeated and duplicate entries', () => {
+  it('rejects undefined, repeated and duplicate names', () => {
     expect(problems({ activities: [{ name: 'boulder', fields: ['grade', 'angle'] }] })).toEqual([
       'activity "boulder": field "angle" is not defined',
     ]);

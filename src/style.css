@@ -143,7 +143,7 @@ main {
   gap: 8px;
 }
 
-/* Outline chevron in the text colour, like the one in the entry form's context bar */
+/* Outline chevron in the text colour, like the one in the attempt form's context bar */
 .group-header .group-chevron {
   color: var(--text);
 }
@@ -174,8 +174,8 @@ main {
   display: none;
 }
 
-/* Entry Card */
-.entry-card {
+/* Attempt card */
+.attempt-card {
   background: var(--input-bg);
   border-radius: 10px;
   padding: 12px 14px;
@@ -185,20 +185,20 @@ main {
   gap: 8px;
 }
 
-.entry-main-row {
+.attempt-main-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-.entry-left {
+.attempt-left {
   display: flex;
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
 }
 
-.entry-time {
+.attempt-time {
   font-size: 0.8rem;
   color: var(--text-muted);
   font-variant-numeric: tabular-nums;
@@ -213,29 +213,29 @@ main {
   border: 1px solid var(--border);
 }
 
-.entry-status-badge {
+.attempt-status-badge {
   font-size: 0.8rem;
   font-weight: 600;
   padding: 2px 8px;
   border-radius: 6px;
 }
 
-.entry-status-green {
+.attempt-status-green {
   background: rgba(16, 185, 129, 0.15);
   color: var(--success);
 }
 
-.entry-status-red {
+.attempt-status-red {
   background: rgba(239, 68, 68, 0.15);
   color: var(--failure);
 }
 
-.entry-status-gray {
+.attempt-status-gray {
   background: rgba(107, 114, 128, 0.15);
   color: var(--work);
 }
 
-.entry-right {
+.attempt-right {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -257,7 +257,7 @@ main {
   color: var(--primary);
 }
 
-.entry-details-row {
+.attempt-details-row {
   display: flex;
   gap: 8px;
   font-size: 0.78rem;
@@ -366,8 +366,8 @@ main {
   line-height: 1;
 }
 
-/* The entry form: the same 20px between every section (context, each field, outcome, actions) */
-#entryForm,
+/* The attempt form: the same 20px between every section (context, each field, outcome, actions) */
+#attemptForm,
 .activity-fields {
   display: flex;
   flex-direction: column;

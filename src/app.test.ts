@@ -111,7 +111,7 @@ describe('loading and history list', () => {
     expect(localStorage.getItem('climb_attempts_history')).not.toBeNull();
   });
 
-  it('groups consecutive entries by activity, location and day, newest first', async () => {
+  it('groups consecutive attempts by activity, location and day, newest first', async () => {
     await start([
       attempt({ id: 'a1', loggedAt: '2026-11-14T12:00:00Z', location: 'A', grade: 'v1' }),
       attempt({ id: 'a2', loggedAt: '2026-11-14T13:00:00Z', location: 'A', grade: 'v2' }),
@@ -140,7 +140,7 @@ describe('loading and history list', () => {
     // each session is a frame, 8px apart; attempts inside are borderless
     expect(getComputedStyle($('historyList')).rowGap).toBe('8px');
     expect(getComputedStyle(groups[0]).borderTopStyle).toBe('solid');
-    expect(getComputedStyle(q('.entry-card', groups[2])).borderTopStyle).toMatch(/^(none|)$/);
+    expect(getComputedStyle(q('.attempt-card', groups[2])).borderTopStyle).toMatch(/^(none|)$/);
     // header: starts with the date (no icon before it), in the normal text colour
     expect(q('.group-header-left', groups[0]).querySelector('svg')).toBeNull();
     expect(getComputedStyle(q('.group-header', groups[0])).color).toBe(
@@ -176,19 +176,19 @@ describe('loading and history list', () => {
         loggedAt: '2026-11-14T12:04:00Z',
       }),
     ]);
-    const badge = (id: string) => q(`[data-entry-id="${id}"] .entry-status-badge`).className;
-    expect(badge('s')).toContain('entry-status-green');
-    expect(badge('f')).toContain('entry-status-red');
-    expect(badge('k')).toContain('entry-status-gray');
+    const badge = (id: string) => q(`[data-attempt-id="${id}"] .attempt-status-badge`).className;
+    expect(badge('s')).toContain('attempt-status-green');
+    expect(badge('f')).toContain('attempt-status-red');
+    expect(badge('k')).toContain('attempt-status-gray');
     // every field the activity lists, as a badge in config order; no tags
-    expect(texts('[data-entry-id="kb"] .grade-badge')).toEqual(['40', 'v4']);
+    expect(texts('[data-attempt-id="kb"] .grade-badge')).toEqual(['40', 'v4']);
     expect(document.querySelector('.detail-tag')).toBeNull();
     const time = new Date('2026-11-14T12:00:00Z').toLocaleTimeString(undefined, {
       hour: '2-digit',
       minute: '2-digit',
       hour12: false,
     });
-    expect(q('[data-entry-id="s"] .entry-time').textContent).toBe(time);
+    expect(q('[data-attempt-id="s"] .attempt-time').textContent).toBe(time);
   });
 
   it('escapes HTML in user text', async () => {
@@ -197,8 +197,8 @@ describe('loading and history list', () => {
   });
 });
 
-describe('new entry modal', () => {
-  it('prefills from the last entry and collapses context within 4 hours', async () => {
+describe('new attempt sheet', () => {
+  it('prefills from the last attempt and collapses context within 4 hours', async () => {
     await start([
       attempt({ id: 'old', location: 'Elsewhere', loggedAt: '2026-11-01T12:00:00Z' }),
       attempt({
@@ -224,7 +224,7 @@ describe('new entry modal', () => {
     expect($('contextSummaryText').textContent).toBe('BW Ost • kilter');
   });
 
-  it('expands context when the last entry is older than 4 hours, or with no history', async () => {
+  it('expands context when the last attempt is older than 4 hours, or with no history', async () => {
     await start([attempt({ loggedAt: '2026-11-15T08:01:00Z' })]);
     $('openModalBtn').click();
     expect($('contextBody').classList.contains('hidden')).toBe(true); // 3h59m: same session
@@ -391,7 +391,7 @@ describe('logging attempts', () => {
     });
     expect(all[1].id).not.toBe('a1');
     expect($('modalOverlay').classList.contains('active')).toBe(false);
-    expect(document.querySelectorAll('.entry-card')).toHaveLength(2);
+    expect(document.querySelectorAll('.attempt-card')).toHaveLength(2);
   });
 
   it('cleans typed text but keeps its case', async () => {
@@ -484,12 +484,12 @@ describe('typing an outcome', () => {
     expect(storedOutcomes()).toContainEqual({ name: 'fell at crux', category: 'failure' });
     expect(stored()[1]).toMatchObject({ outcome: 'fell at crux', location: 'BW Ost' });
     expect($('modalOverlay').classList.contains('active')).toBe(false);
-    expect(q('.entry-status-badge').className).toContain('entry-status-red');
+    expect(q('.attempt-status-badge').className).toContain('attempt-status-red');
   });
 
   it('keeps expanded history groups when registering an outcome fails to log', async () => {
     await start([attempt({ id: 'old', location: 'Old Gym' }), attempt({ id: 'new' })]);
-    const oldGroup = () => q('[data-entry-id="old"]').closest('.group-container')!;
+    const oldGroup = () => q('[data-attempt-id="old"]').closest('.group-container')!;
     q('.group-header', oldGroup()).click();
     expect(oldGroup().classList.contains('collapsed')).toBe(false);
 
@@ -532,7 +532,7 @@ describe('layout', () => {
     $('contextHeader').click();
     expect([first, chevron()].sort()).toEqual(['none', 'rotate(-90deg)']);
     // even spacing: the form and the activity fields both separate sections by 20px
-    expect(getComputedStyle($('entryForm')).rowGap).toBe('20px');
+    expect(getComputedStyle($('attemptForm')).rowGap).toBe('20px');
     expect(getComputedStyle($('activityFields')).rowGap).toBe('20px');
     // field chips have a minimum tap size; the highlight is drawn inside the chip
     const chip = getComputedStyle(q('#chips-grade .chip-small'));
@@ -570,9 +570,9 @@ describe('editing and deleting', () => {
     attempt({ id: 'a2', loggedAt: '2026-11-14T13:00:00Z', grade: 'v4' }),
   ];
 
-  const edit = (id: string) => q(`[data-entry-id="${id}"] .edit-btn`).click();
+  const edit = (id: string) => q(`[data-attempt-id="${id}"] .edit-btn`).click();
 
-  it('opens the entry for editing', async () => {
+  it('opens the attempt for editing', async () => {
     await start(data());
     edit('a1');
     expect($('modalTitle').textContent).toBe('Edit Attempt');
@@ -580,11 +580,11 @@ describe('editing and deleting', () => {
     expect($<HTMLInputElement>('field-grade').value).toBe('v3');
     expect($<HTMLInputElement>('field-angle').value).toBe('40');
     expect($('contextBody').classList.contains('hidden')).toBe(true);
-    // suggestions exclude the entry being edited
+    // suggestions exclude the attempt being edited
     expect(texts('#chips-grade .chip-small')).toEqual(['v4']);
   });
 
-  it('updates the entry in place, keeping id and time', async () => {
+  it('updates the attempt in place, keeping id and time', async () => {
     await start(data());
     edit('a1');
     type('field-grade', 'v6');
@@ -621,7 +621,7 @@ describe('editing and deleting', () => {
     expect(stored()[0]).toMatchObject({ outcome: 'fell', angle: '30' });
   });
 
-  it('highlights the edited entry’s outcome', async () => {
+  it('highlights the edited attempt’s outcome', async () => {
     await start([attempt({ id: 'a1', outcome: 'fell' }), attempt({ id: 'a2', outcome: 'flash' })]);
     edit('a1');
     const chip = (t: string) =>
@@ -653,7 +653,7 @@ describe('editing and deleting', () => {
     expect(stored()).toHaveLength(2);
   });
 
-  it('a new entry after cancelling an edit is added, not an edit', async () => {
+  it('a new attempt after cancelling an edit is added, not an edit', async () => {
     await start(data());
     edit('a1');
     $('closeModalBtn').click();
@@ -768,13 +768,13 @@ describe('backup menu', () => {
         expect(alertMock).toHaveBeenCalledWith('Successfully imported 2 attempts.'),
       );
       expect(confirmMock).toHaveBeenCalledWith(
-        'Importing this backup will completely REPLACE your existing 1 local entries with the 2 entries from the file.\n\nProceed?',
+        'Importing this backup will completely REPLACE your existing 1 local attempts with the 2 attempts from the file.\n\nProceed?',
       );
       expect(storedData().version).toBe('clog 0.1.0');
       expect(stored().map((a) => a.id)).toEqual(['b1', 'b2']);
       expect(storedOutcomes()).toEqual(backup.outcomes);
-      expect(document.querySelectorAll('.entry-card')).toHaveLength(2);
-      expect(q('.entry-status-badge').className).toContain('entry-status-green');
+      expect(document.querySelectorAll('.attempt-card')).toHaveLength(2);
+      expect(q('.attempt-status-badge').className).toContain('attempt-status-green');
       expect($('menuModalOverlay').classList.contains('active')).toBe(false);
       for (const key of LEGACY_KEYS) expect(localStorage.getItem(key)).toBeNull();
     });
@@ -861,7 +861,7 @@ describe('saved data that cannot be used', () => {
     // the app is not running: its buttons do nothing
     $('openModalBtn').click();
     expect($('modalOverlay').classList.contains('active')).toBe(false);
-    expect(document.querySelectorAll('.entry-card')).toHaveLength(0);
+    expect(document.querySelectorAll('.attempt-card')).toHaveLength(0);
   });
 
   it('lists every kind of problem: invalid JSON, old version, unknown outcome', async () => {

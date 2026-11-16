@@ -23,7 +23,7 @@ export interface AppConfig {
   fields: Record<string, FieldConfig>;
   /** In tab order. */
   activities: ActivityConfig[];
-  /** A new entry starts with the context (activity, location) collapsed this soon after the last one. */
+  /** A new attempt starts with the context (activity, location) collapsed this soon after the last one. */
   sameSessionHours: number;
   /** Most chips in one chip row (the row is a single line that scrolls sideways). */
   maxChips: number;

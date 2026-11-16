@@ -12,7 +12,7 @@ export const RESERVED_KEYS: readonly string[] = [...FIXED_KEYS, 'updatedAt', 'de
  */
 export interface Attempt {
   id: string;
-  /** When the entry was made (ISO timestamp), not when the climb happened. */
+  /** When the attempt was logged (ISO timestamp), not when the climb happened. */
   loggedAt: string;
   activity: string;
   location: string;

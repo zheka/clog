@@ -1,7 +1,7 @@
 import type { Attempt, Outcome } from './core/types';
 import { clearData, loadData, saveData } from './data/storage';
 import { createStore } from './store';
-import { mountEntryModal } from './ui/entryModal';
+import { mountAttemptModal } from './ui/attemptModal';
 import { mountHistoryView } from './ui/historyView';
 import { mountMenuModal } from './ui/menuModal';
 import { requestPersistentStorage, setupUpdates } from './pwa';
@@ -13,8 +13,8 @@ requestPersistentStorage();
 
 function startApp(data: { attempts: Attempt[]; outcomes: Outcome[] }) {
   const store = createStore(data, (state) => saveData(state.attempts, state.outcomes));
-  const entryModal = mountEntryModal(store);
-  mountHistoryView(store, entryModal.openEdit);
+  const attemptModal = mountAttemptModal(store);
+  mountHistoryView(store, attemptModal.openEdit);
   mountMenuModal(store, updates);
 }
 

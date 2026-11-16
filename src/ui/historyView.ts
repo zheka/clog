@@ -6,9 +6,9 @@ import type { State, Store } from '../store';
 import { byId, escapeHtml } from './dom';
 
 const BADGE_CLASS: Record<Category, string> = {
-  success: 'entry-status-green',
-  failure: 'entry-status-red',
-  work: 'entry-status-gray',
+  success: 'attempt-status-green',
+  failure: 'attempt-status-red',
+  work: 'attempt-status-gray',
 };
 
 const CHEVRON_ICON =
@@ -52,46 +52,46 @@ export function mountHistoryView(store: Store, onEdit: (id: string) => void): vo
 
     const bodyEl = document.createElement('div');
     bodyEl.className = 'group-body';
-    session.entries.forEach((entry) => bodyEl.appendChild(renderCard(entry, outcomes)));
+    session.attempts.forEach((attempt) => bodyEl.appendChild(renderCard(attempt, outcomes)));
     groupEl.appendChild(bodyEl);
 
     return groupEl;
   }
 
-  function renderCard(entry: Attempt, outcomes: Outcome[]) {
+  function renderCard(attempt: Attempt, outcomes: Outcome[]) {
     const card = document.createElement('div');
-    card.className = 'entry-card';
-    card.dataset.entryId = entry.id;
+    card.className = 'attempt-card';
+    card.dataset.attemptId = attempt.id;
 
-    const time = new Date(entry.loggedAt).toLocaleTimeString(undefined, {
+    const time = new Date(attempt.loggedAt).toLocaleTimeString(undefined, {
       hour: '2-digit',
       minute: '2-digit',
       hour12: false,
     });
-    const badgeClass = BADGE_CLASS[getCategory(outcomes, entry.outcome)];
+    const badgeClass = BADGE_CLASS[getCategory(outcomes, attempt.outcome)];
 
     const html = `
-        <div class="entry-main-row">
-          <div class="entry-left">
-            <span class="entry-time">${time}</span>
-            ${fieldBadges(entry)}
-            <span class="entry-status-badge ${badgeClass}">${escapeHtml(entry.outcome)}</span>
+        <div class="attempt-main-row">
+          <div class="attempt-left">
+            <span class="attempt-time">${time}</span>
+            ${fieldBadges(attempt)}
+            <span class="attempt-status-badge ${badgeClass}">${escapeHtml(attempt.outcome)}</span>
           </div>
-          <div class="entry-right">
-            <button type="button" class="edit-btn" data-id="${entry.id}">Edit</button>
+          <div class="attempt-right">
+            <button type="button" class="edit-btn" data-id="${attempt.id}">Edit</button>
           </div>
         </div>
       `;
     card.innerHTML = html;
-    card.querySelector('.edit-btn')!.addEventListener('click', () => onEdit(entry.id));
+    card.querySelector('.edit-btn')!.addEventListener('click', () => onEdit(attempt.id));
     return card;
   }
 
   /** The activity's fields as badges, in config order. Fields it doesn't list aren't shown. */
-  function fieldBadges(entry: Attempt) {
-    return (findActivity(entry.activity)?.fields ?? [])
-      .filter((field) => entry[field])
-      .map((field) => `<span class="grade-badge">${escapeHtml(entry[field])}</span>`)
+  function fieldBadges(attempt: Attempt) {
+    return (findActivity(attempt.activity)?.fields ?? [])
+      .filter((field) => attempt[field])
+      .map((field) => `<span class="grade-badge">${escapeHtml(attempt[field])}</span>`)
       .join('');
   }
 

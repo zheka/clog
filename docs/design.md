@@ -43,15 +43,15 @@ The reference list of every name in the schema. Everything else in this document
 
 **Attempt**
 
-| Name       | Meaning                                                  |
-| ---------- | -------------------------------------------------------- |
-| `id`       | random UUID, generated once, never changes               |
-| `loggedAt` | when the entry was **made**, not when the climb happened |
-| `activity` | `boulder`, `route` or `kilter`                           |
-| `location` | gym or outdoor sector, free text                         |
-| `outcome`  | the `name` of an outcome from `outcomes`                 |
-| `grade`    | activity field (all activities), free text               |
-| `angle`    | activity field of `kilter`, free text (e.g. `"40"`)      |
+| Name       | Meaning                                                      |
+| ---------- | ------------------------------------------------------------ |
+| `id`       | random UUID, generated once, never changes                   |
+| `loggedAt` | when the attempt was **logged**, not when the climb happened |
+| `activity` | `boulder`, `route` or `kilter`                               |
+| `location` | gym or outdoor sector, free text                             |
+| `outcome`  | the `name` of an outcome from `outcomes`                     |
+| `grade`    | activity field (all activities), free text                   |
+| `angle`    | activity field of `kilter`, free text (e.g. `"40"`)          |
 
 **Code configuration (`src/config.ts`)**
 
@@ -118,7 +118,7 @@ problems per session, with revisits), so attempts are not linked. Analysis works
 aggregates (send rate and volume per grade per session, over time).
 
 **Time.** Attempts are usually logged in a batch after or late in the session, so `loggedAt`
-is the entry time. Analysis should rely on the order of attempts within a group, not on gaps
+is the logging time. Analysis should rely on the order of attempts within a group, not on gaps
 between timestamps.
 
 ### Activities (built into the code)
@@ -324,7 +324,7 @@ npm run backup -- convert-legacy old.json [more.json…] -o new.json   # one-off
 The current format (`1.2.0`) is not migrated inside the app. Since there is a single user, the
 existing backup is converted once by hand.
 
-1. **Export** a backup from the current app on **every device that has entries** (each browser
+1. **Export** a backup from the current app on **every device that has attempts** (each browser
    has its own data).
 2. **Convert** with `convert-legacy`, which merges several files by attempt id and:
    - sets `"version": "clog 0.1.0"`;
@@ -345,23 +345,23 @@ import or a failed write leaves them in place. Logging before importing does not
 Keep the exported `1.2.0` files until the new version has proven itself. The cleanup code can
 be deleted once every device has switched over.
 
-## Entry form
+## Attempt form
 
 ### Prefill and context
 
 - A new attempt is **prefilled from the previous attempt** for every field (the same or a
   similar problem is often climbed many times in a row).
-- **Switching activity** in a new entry loads the previous attempt **of that activity** (location
+- **Switching activity** in a new attempt loads the previous attempt **of that activity** (location
   and fields). With no previous attempt of that activity, or when editing, the location and the
   values of fields both activities have are kept.
 - The context section (activity, location) is **collapsed** when the previous attempt is recent
-  (`sameSessionHours`), and expanded for the first entry of a session.
+  (`sameSessionHours`), and expanded for the first attempt of a session.
 
 ### Inputs and chips
 
 Every input, outcome included, is **text first with a chip row below**.
 
-- Every sheet (entry form and backup menu) **opens from the top** of the screen, so the keyboard
+- Every sheet (attempt form and backup menu) **opens from the top** of the screen, so the keyboard
   (at the bottom) doesn't cover the fields and their chips.
 - The keyboard's action key is **Done**: it closes the keyboard, nothing is saved.
 - Each chip row is **one line that scrolls sideways** (it never wraps), with at most
@@ -385,21 +385,21 @@ Rules for every chip row:
   history. With no text the pool order is kept. All chips look the same.
 - A **prefilled value does not filter** the chips; only text the user types does.
 - The **highlighted chip is the field's current value**: for a new attempt the previous
-  attempt's value, when editing the entry's own value.
+  attempt's value, when editing the attempt's own value.
 - Chip scope: location chips come from the same activity; activity-field chips from the same
   activity and location.
 - Filtering while typing ignores case (`bw` shows `BW Ost`); tapping a chip stores exactly that
   spelling (see Normalisation and matching).
 - Recency was compared with frequency ordering on the real log: frequency gained little for
   fields and lost for outcomes, so all rows use recency. With 8 chips, about 99% of the values a
-  chip can offer were among them; about 85% of all entries in the first 4–5 chips.
+  chip can offer were among them; about 85% of all attempts in the first 4–5 chips.
 
 ### Outcomes
 
 - Tapping an outcome chip **saves the attempt immediately**.
 - Outcome chips come **from the outcome list only**; history decides their order.
 - The outcome input **starts empty**: the tap is the save, so a prefilled value would do
-  nothing. The previous outcome (when editing, the entry's own) is highlighted among the chips.
+  nothing. The previous outcome (when editing, the attempt's own) is highlighted among the chips.
 - **While typing**, the row shows only the matching outcomes (no backfill). For a name that
   doesn't exist yet, a **row of its own below** shows one chip per category (`🟢 name`,
   `🔴 name`, `⚪ name`): tapping one creates the outcome in that category and saves the attempt.
@@ -427,7 +427,7 @@ Rules for every chip row:
   session concept: boulders and the board on the same day appear as two groups.
 - The group header shows the date, location and activity (`Nov 15 • TK • route`) in the normal
   text colour, with no icon before it and no line under it, and the same outline chevron as the
-  entry form's context bar. Cards show the time, **each field the
+  attempt form's context bar. Cards show the time, **each field the
   activity lists as a badge** in config order, and the outcome badge in its category colour.
   No tags; fields the activity doesn't list are not shown. Decorations such as a `°` suffix
   for the angle will come from field properties.
@@ -449,7 +449,7 @@ Rules for every chip row:
 | Tapping an outcome saves immediately          | Keep: logging must be one tap                                                                 |
 | Interleaving activities splits history groups | Keep: intended                                                                                |
 | Outcome capitalisation inconsistent           | Normalised outcome names                                                                      |
-| Entry time cannot be edited                   | Low priority; only if very unobtrusive                                                        |
+| Attempt time cannot be edited                 | Low priority; only if very unobtrusive                                                        |
 | Import replaces everything                    | Keep: backups are restored as a whole; merging is a job for sync                              |
 | Browser `alert()` / `confirm()` popups        | Inline messages and two-tap confirmations                                                     |
 
@@ -468,7 +468,7 @@ Rules for every chip row:
   the chip count, whether the edge fade is clear enough (or needs a small arrow).
 - Long headers (history and context bar) and long card values wrap for now; shortening with
   "…" was discussed and postponed. Field properties (`suffix`, labels…) when a need shows up.
-- Editing an entry's time: how to make it unobtrusive.
+- Editing an attempt's time: how to make it unobtrusive.
 - Switching activity in the form loads that activity's previous attempt: confirm.
 - A `style` field for `route`: suspended until needed.
 
@@ -482,7 +482,7 @@ Rules for every chip row:
    fields from the config, chip pools with backfill, cleaning without case changes, required
    fields, outcome chips from the list with current-value highlight and filtering, switching
    activity, keeping unlisted fields on edit); badge-only cards; two-tap delete.
-3. **Done (round 2, from a UX interview):** entry sheet at the top, Done closes the keyboard,
+3. **Done (round 2, from a UX interview):** attempt sheet at the top, Done closes the keyboard,
    one-line chip rows (8, recency), outcome as a text-first field with new-outcome chips,
    spacing cleanup. To test in real life: the top sheet, outcomes on one line vs two, chips above
    the fields, the chip count.

@@ -8,7 +8,7 @@ export function generateId(): string {
   return 'id_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
 }
 
-/** What the entry form provides when logging or editing an attempt (values already cleaned). */
+/** What the attempt form provides when logging or editing an attempt (values already cleaned). */
 export interface AttemptInput {
   activity: string;
   location: string;

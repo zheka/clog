@@ -7,7 +7,7 @@ export interface Session {
   /** Short local date, e.g. "Nov 15". */
   dateString: string;
   /** Newest first. */
-  entries: Attempt[];
+  attempts: Attempt[];
 }
 
 export function formatDay(iso: string): string {
@@ -23,17 +23,17 @@ export function groupIntoSessions(attempts: Attempt[]): Session[] {
   const sessions: Session[] = [];
   let current: Session | null = null;
 
-  for (const entry of [...attempts].reverse()) {
-    const location = entry.location || 'Unknown Location';
-    const activity = entry.activity;
-    const dateString = formatDay(entry.loggedAt);
+  for (const attempt of [...attempts].reverse()) {
+    const location = attempt.location || 'Unknown Location';
+    const activity = attempt.activity;
+    const dateString = formatDay(attempt.loggedAt);
     const key = `${activity}___${location}___${dateString}`;
 
     if (!current || current.key !== key) {
-      current = { key, activity, location, dateString, entries: [] };
+      current = { key, activity, location, dateString, attempts: [] };
       sessions.push(current);
     }
-    current.entries.push(entry);
+    current.attempts.push(attempt);
   }
   return sessions;
 }
