@@ -24,6 +24,8 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      # Only what ships to the browser; build tools are checked by hand (see README).
+      - run: npm audit --omit=dev
       - run: npm run lint
       - run: npm test
       - run: npm run build

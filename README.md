@@ -61,6 +61,14 @@ CLog is a PWA: open https://zheka.github.io/clog/ in Chrome and choose **Install
 device. A new version downloads in the background and takes over on the next launch, or right
 away from the menu (**App Version**).
 
+## Dependencies
+
+The app has no runtime dependencies; everything in `package.json` is build tooling. CI runs
+`npm audit --omit=dev`, which covers what ships. For the tooling, `overrides` in `package.json`
+force patched `minimatch` and `glob`. The remaining low advisory (`deepmerge`, used by Workbox
+to build the offline cache) has no patched release; it only merges our own build config.
+Drop the overrides once the tools depend on fixed versions themselves.
+
 ## Deployment
 
 GitHub Actions (`.github/workflows/deploy.yml`) lints, tests and builds every PR,
