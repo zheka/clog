@@ -1,4 +1,4 @@
-import { KINDS, type Attempt, type Kind } from './types';
+import type { Attempt } from './types';
 
 export function generateId(): string {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -7,43 +7,36 @@ export function generateId(): string {
   return 'id_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
 }
 
-/** Any object read from storage or a backup file; fields may be missing or of the wrong type. */
-export type RawAttempt = Record<string, unknown>;
-
-function isKind(value: unknown): value is Kind {
-  return KINDS.includes(value as Kind);
+/** What the entry form provides when logging or editing an attempt (values already cleaned). */
+export interface AttemptInput {
+  activity: string;
+  location: string;
+  outcome: string;
+  /** The activity's own fields; empty values are left out. */
+  fields: Record<string, string>;
 }
 
-/** True if a raw record has everything needed to be imported from a backup. */
-export function isCompleteAttempt(raw: unknown): raw is RawAttempt {
-  if (!raw || typeof raw !== 'object') return false;
-  const r = raw as RawAttempt;
-  return Boolean((r.loggedAt || r.timestamp) && r.location && r.grade && r.outcome);
+export function createAttempt(input: AttemptInput, now = new Date()): Attempt {
+  return withChanges({ id: generateId(), loggedAt: now.toISOString() } as Attempt, input);
 }
 
 /**
- * Turns a raw record (current or legacy shape) into an Attempt, filling in defaults:
- * `timestamp` → `loggedAt`, unknown kind → bouldering, trimmed text fields,
- * and a numeric `boardAngle` kept only for kilterboard.
+ * The attempt with the form's values applied; id and time unchanged. Activity fields are
+ * replaced by the form's, so switching activity drops fields the new activity doesn't have.
  */
-export function normalizeAttempt(raw: RawAttempt): Attempt {
-  const attempt: Attempt = {
-    id: (raw.id as string) || generateId(),
-    loggedAt: (raw.loggedAt as string) || (raw.timestamp as string) || new Date().toISOString(),
-    kind: isKind(raw.kind) ? raw.kind : 'bouldering',
-    location: String(raw.location || 'Unknown').trim(),
-    grade: String(raw.grade || '').trim(),
-    outcome: String(raw.outcome || '').trim(),
+export function withChanges(attempt: Attempt, input: AttemptInput): Attempt {
+  // Key order as in the design: context, activity fields, outcome.
+  const updated: Record<string, string> = {
+    id: attempt.id,
+    loggedAt: attempt.loggedAt,
+    activity: input.activity,
+    location: input.location,
   };
-  if (
-    attempt.kind === 'kilterboard' &&
-    raw.boardAngle !== undefined &&
-    raw.boardAngle !== null &&
-    raw.boardAngle !== ''
-  ) {
-    attempt.boardAngle = Number(raw.boardAngle);
+  for (const [field, value] of Object.entries(input.fields)) {
+    if (value !== '') updated[field] = value;
   }
-  return attempt;
+  updated.outcome = input.outcome;
+  return updated as Attempt;
 }
 
 /** Oldest first. */
@@ -51,39 +44,4 @@ export function sortByTime(attempts: Attempt[]): Attempt[] {
   return [...attempts].sort(
     (a, b) => new Date(a.loggedAt).getTime() - new Date(b.loggedAt).getTime(),
   );
-}
-
-/**
- * The attempt list inside parsed storage/backup JSON: a bare array (oldest format),
- * or the `attempts` / `entries` property.
- */
-export function unwrapAttempts(parsed: unknown): unknown[] {
-  if (Array.isArray(parsed)) return parsed;
-  const obj = parsed as { attempts?: unknown[]; entries?: unknown[] };
-  return obj.attempts || obj.entries || [];
-}
-
-/** What the entry form provides when logging or editing an attempt. */
-export interface AttemptInput {
-  kind: Kind;
-  location: string;
-  grade: string;
-  outcome: string;
-  /** Only stored for kilterboard; null = not set. */
-  boardAngle: number | null;
-}
-
-export function createAttempt(input: AttemptInput, now = new Date()): Attempt {
-  const { kind, location, grade, outcome } = input;
-  const base = { id: generateId(), loggedAt: now.toISOString(), kind, location, grade, outcome };
-  return withChanges(base, input);
-}
-
-/** The attempt with the form's fields applied (id and time unchanged). */
-export function withChanges(attempt: Attempt, input: AttemptInput): Attempt {
-  const { kind, location, grade, outcome, boardAngle } = input;
-  const updated: Attempt = { ...attempt, kind, location, grade, outcome };
-  delete updated.boardAngle;
-  if (kind === 'kilterboard' && boardAngle !== null) updated.boardAngle = boardAngle;
-  return updated;
 }

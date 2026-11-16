@@ -8,10 +8,10 @@ export function makeAttempt(overrides: Partial<Attempt> = {}): Attempt {
   return {
     id: `a${seq}`,
     loggedAt: new Date(Date.UTC(2026, 10, 14, 12, seq)).toISOString(),
-    kind: 'bouldering',
+    activity: 'boulder',
     location: 'BW Ost',
     grade: 'v4',
     outcome: 'flash',
     ...overrides,
-  };
+  } as Attempt;
 }

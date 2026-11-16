@@ -1,4 +1,5 @@
 import { backupFileName, createBackup, parseBackup } from '../data/backup';
+import { removeLegacyData } from '../data/storage';
 import type { Store } from '../store';
 import { byId, downloadFile } from './dom';
 
@@ -37,6 +38,8 @@ export function mountMenuModal(store: Store): void {
       return;
     }
     store.replaceAll(backup.attempts, backup.outcomes);
+    // The data is now saved under the new key, so the pre-0.1.0 copy is no longer needed.
+    removeLegacyData();
     close();
     alert(`Successfully imported ${backup.attempts.length} attempts.`);
   }

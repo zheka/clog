@@ -1,11 +1,13 @@
+import { config, findActivity } from '../config';
 import { getCategory, sortByName } from '../core/outcomes';
 import { matchExistingCasing, quickOutcomes, suggestValues } from '../core/suggestions';
-import type { Category, Kind } from '../core/types';
+import { cleanText, normalizeName } from '../core/text';
+import type { Category } from '../core/types';
 import type { Store } from '../store';
 import { byId } from './dom';
 
 /** Within this time since the last attempt, a new entry starts with the context collapsed. */
-const SAME_SESSION_MS = 2 * 60 * 60 * 1000;
+const SAME_SESSION_MS = config.sameSessionHours * 60 * 60 * 1000;
 
 export interface EntryModal {
   openNew(): void;
@@ -18,7 +20,7 @@ export interface EntryModal {
  */
 export function mountEntryModal(store: Store): EntryModal {
   let editingId: string | null = null;
-  let selectedKind: Kind = 'bouldering';
+  let selectedActivity = config.activities[0].name;
   let selectedCustomCategory: Category | null = null;
 
   const overlay = byId('modalOverlay');
@@ -30,7 +32,17 @@ export function mountEntryModal(store: Store): EntryModal {
   const contextSummary = byId('contextSummaryText');
   const contextToggle = byId('contextToggleLink');
 
-  const kindTabs = document.querySelectorAll<HTMLElement>('.kind-tab');
+  const activityPicker = byId('activityPicker');
+  const activityTabs = config.activities.map((activity) => {
+    const tab = document.createElement('button');
+    tab.type = 'button';
+    tab.className = 'activity-tab';
+    tab.dataset.activity = activity.name;
+    tab.textContent = activity.name;
+    tab.addEventListener('click', () => setActivity(activity.name));
+    activityPicker.appendChild(tab);
+    return tab;
+  });
   const angleGroup = byId('boardAngleGroup');
   const angleInput = byId<HTMLInputElement>('boardAngleInput');
   const angleChips = document.querySelectorAll<HTMLElement>('#angleChips .chip-small');
@@ -49,10 +61,10 @@ export function mountEntryModal(store: Store): EntryModal {
 
   // --- rendering -----------------------------------------------------------
 
-  function setKind(kind: Kind) {
-    selectedKind = kind;
-    kindTabs.forEach((tab) => tab.classList.toggle('active', tab.dataset.kind === kind));
-    if (kind === 'kilterboard') {
+  function setActivity(name: string) {
+    selectedActivity = name;
+    activityTabs.forEach((tab) => tab.classList.toggle('active', tab.dataset.activity === name));
+    if (hasField('angle')) {
       angleGroup.style.display = 'flex';
     } else {
       angleGroup.style.display = 'none';
@@ -61,9 +73,13 @@ export function mountEntryModal(store: Store): EntryModal {
     updateContextSummary();
   }
 
+  function hasField(field: string) {
+    return findActivity(selectedActivity)?.fields.includes(field) ?? false;
+  }
+
   function updateContextSummary() {
     const location = locationInput.value.trim() || 'Unknown Location';
-    contextSummary.textContent = `${location} • ${selectedKind}`;
+    contextSummary.textContent = `${location} • ${selectedActivity}`;
   }
 
   function setContextExpanded(expanded: boolean) {
@@ -146,7 +162,7 @@ export function mountEntryModal(store: Store): EntryModal {
 
   // --- open ----------------------------------------------------------------
 
-  /** New entry, prefilled from the last one (same gym, kind, grade and angle). */
+  /** New entry, prefilled from the last one (same activity, gym, grade and angle). */
   function openNew() {
     editingId = null;
     title.textContent = 'New Entry';
@@ -154,13 +170,12 @@ export function mountEntryModal(store: Store): EntryModal {
 
     const { attempts } = store.getState();
     const last = attempts.length > 0 ? attempts[attempts.length - 1] : null;
-    setKind(last ? last.kind || 'bouldering' : 'bouldering');
+    setActivity(last && findActivity(last.activity) ? last.activity : config.activities[0].name);
     locationInput.value = last ? last.location || '' : '';
     gradeInput.value = last ? last.grade || '' : '';
-    angleInput.value =
-      last && last.kind === 'kilterboard' && last.boardAngle ? String(last.boardAngle) : '';
+    angleInput.value = last && hasField('angle') ? last.angle || '' : '';
 
-    // Collapse the context (location/kind) while still in the same session.
+    // Collapse the context (activity, location) while still in the same session.
     const sameSession =
       last !== null &&
       Boolean(last.loggedAt) &&
@@ -178,13 +193,10 @@ export function mountEntryModal(store: Store): EntryModal {
     title.textContent = 'Edit Entry';
     deleteBtn.style.display = 'block';
 
-    setKind(entry.kind || 'bouldering');
+    setActivity(entry.activity);
     locationInput.value = entry.location || '';
     gradeInput.value = entry.grade || '';
-    angleInput.value =
-      entry.kind === 'kilterboard' && entry.boardAngle !== undefined
-        ? String(entry.boardAngle)
-        : '';
+    angleInput.value = hasField('angle') ? entry.angle || '' : '';
     setContextExpanded(false);
 
     show();
@@ -194,20 +206,17 @@ export function mountEntryModal(store: Store): EntryModal {
 
   function logAttempt(outcome: string) {
     const { attempts } = store.getState();
-    const location = matchExistingCasing(attempts, 'location', locationInput.value);
-    const grade = matchExistingCasing(attempts, 'grade', gradeInput.value);
+    const location = matchExistingCasing(attempts, 'location', cleanText(locationInput.value));
+    const grade = matchExistingCasing(attempts, 'grade', cleanText(gradeInput.value));
     if (!location || !grade) {
       alert('Please fill in both Location and Grade before selecting an outcome.');
       return;
     }
 
-    let boardAngle: number | null = null;
-    if (selectedKind === 'kilterboard' && angleInput.value.trim() !== '') {
-      const parsed = Number(angleInput.value);
-      if (!isNaN(parsed)) boardAngle = parsed;
-    }
+    const fields: Record<string, string> = { grade };
+    if (hasField('angle')) fields.angle = cleanText(angleInput.value);
 
-    const input = { kind: selectedKind, location, grade, outcome, boardAngle };
+    const input = { activity: selectedActivity, location, outcome, fields };
     if (editingId) {
       store.updateAttempt(editingId, input);
     } else {
@@ -217,13 +226,13 @@ export function mountEntryModal(store: Store): EntryModal {
   }
 
   function saveCustomOutcome() {
-    const name = customInput.value.trim().toLowerCase();
+    const name = normalizeName(customInput.value);
     if (!name) {
       alert('Please enter an outcome name.');
       return;
     }
     if (!selectedCustomCategory) {
-      alert('Please select whether this outcome is a Success, Failure, or Skip.');
+      alert('Please select whether this outcome is a Success, Failure, or Work.');
       return;
     }
     // Registered even if logging then fails validation.
@@ -249,7 +258,6 @@ export function mountEntryModal(store: Store): EntryModal {
   contextHeader.addEventListener('click', () => {
     setContextExpanded(contextBody.classList.contains('hidden'));
   });
-  kindTabs.forEach((tab) => tab.addEventListener('click', () => setKind(tab.dataset.kind as Kind)));
   angleChips.forEach((chip) =>
     chip.addEventListener('click', () => (angleInput.value = chip.dataset.angle ?? '')),
   );

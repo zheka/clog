@@ -1,117 +1,151 @@
 import { describe, expect, it } from 'vitest';
-import type { Attempt } from '../core/types';
-import { backupFileName, createBackup, parseBackup } from './backup';
+import type { Attempt, Outcome } from '../core/types';
+import {
+  BackupError,
+  backupFileName,
+  createBackup,
+  parseBackup,
+  validateBackup,
+  versionProblem,
+} from './backup';
 
+const outcomes: Outcome[] = [
+  { name: 'flash', category: 'success' },
+  { name: 'fell', category: 'failure' },
+];
 const attempt: Attempt = {
   id: 'a1',
   loggedAt: '2026-11-01T10:00:00.000Z',
-  kind: 'bouldering',
+  activity: 'kilter',
   location: 'BW Ost',
+  angle: '40',
   grade: 'v4',
   outcome: 'flash',
 };
+const backup = (patch: Record<string, unknown> = {}) => ({
+  version: 'clog 0.1.0',
+  exportedAt: '2026-11-16T09:00:00.000Z',
+  outcomes,
+  attempts: [attempt],
+  ...patch,
+});
+const problemsWith = (a: Record<string, unknown>) =>
+  validateBackup(backup({ attempts: [{ ...attempt, ...a }] }));
 
-describe('parseBackup', () => {
-  it('reads the current format with outcomes', () => {
-    const text = JSON.stringify({
-      version: '1.2.0',
-      outcomes: [{ name: 'flash', category: 'success' }],
+describe('createBackup / parseBackup', () => {
+  it('writes a versioned backup with outcomes sorted by name', () => {
+    const now = new Date('2026-11-16T09:00:00Z');
+    expect(createBackup([attempt], [...outcomes].reverse(), now)).toEqual({
+      version: 'clog 0.1.0',
+      exportedAt: '2026-11-16T09:00:00.000Z',
+      outcomes: [outcomes[1], outcomes[0]],
       attempts: [attempt],
     });
-    const { attempts, outcomes } = parseBackup(text);
-    expect(attempts).toEqual([attempt]);
-    expect(outcomes).toEqual([{ name: 'flash', category: 'success' }]);
   });
 
-  it('reads legacy formats: bare array, `entries`, `timestamp`, `customOutcomes`', () => {
-    const legacy = { ...attempt, loggedAt: undefined, timestamp: attempt.loggedAt };
-    expect(parseBackup(JSON.stringify([legacy])).attempts).toEqual([attempt]);
-    expect(parseBackup(JSON.stringify({ entries: [legacy] })).attempts).toEqual([attempt]);
-    expect(
-      parseBackup(
-        JSON.stringify({ attempts: [attempt], customOutcomes: [{ name: 'x', category: 'skip' }] }),
-      ).outcomes,
-    ).toEqual([{ name: 'x', category: 'skip' }]);
+  it('round-trips, returning attempts oldest first', () => {
+    const later = { ...attempt, id: 'a2', loggedAt: '2026-11-02T10:00:00.000Z' };
+    const parsed = parseBackup(JSON.stringify(createBackup([later, attempt], outcomes)));
+    expect(parsed.attempts).toEqual([attempt, later]);
+    expect(parsed.outcomes).toEqual([outcomes[1], outcomes[0]]);
   });
 
-  it('returns null outcomes when the file has none', () => {
-    expect(parseBackup(JSON.stringify([attempt])).outcomes).toBeNull();
-  });
-
-  it('drops attempts missing required fields', () => {
-    const { attempts } = parseBackup(
-      JSON.stringify([attempt, { ...attempt, id: 'a2', grade: '' }, null]),
+  it('throws on invalid JSON, and a BackupError listing problems', () => {
+    expect(() => parseBackup('not json')).toThrow(SyntaxError);
+    const text = JSON.stringify(
+      backup({ attempts: [{ ...attempt, outcome: 'x', activity: 'y' }] }),
     );
-    expect(attempts.map((a) => a.id)).toEqual(['a1']);
-  });
-
-  it('replaces missing and duplicate ids', () => {
-    const { attempts } = parseBackup(
-      JSON.stringify([attempt, attempt, { ...attempt, id: undefined }]),
-    );
-    expect(attempts[0].id).toBe('a1');
-    expect(new Set(attempts.map((a) => a.id)).size).toBe(3);
-  });
-
-  it('defaults unknown kinds to bouldering and keeps board angle only for kilterboard', () => {
-    const { attempts } = parseBackup(
-      JSON.stringify([
-        { ...attempt, id: 'k', kind: 'kilterboard', boardAngle: '40' },
-        { ...attempt, id: 'b', kind: 'bouldering', boardAngle: 40 },
-        { ...attempt, id: 'u', kind: 'ice' },
-      ]),
-    );
-    expect(attempts.find((a) => a.id === 'k')!.boardAngle).toBe(40);
-    expect(attempts.find((a) => a.id === 'b')).not.toHaveProperty('boardAngle');
-    expect(attempts.find((a) => a.id === 'u')!.kind).toBe('bouldering');
-  });
-
-  it('trims text fields and sorts oldest first', () => {
-    const later = {
-      ...attempt,
-      id: 'late',
-      loggedAt: '2026-11-02T10:00:00.000Z',
-      location: '  BW Ost  ',
-    };
-    const { attempts } = parseBackup(JSON.stringify([later, attempt]));
-    expect(attempts.map((a) => a.id)).toEqual(['a1', 'late']);
-    expect(attempts[1].location).toBe('BW Ost');
-  });
-
-  it('throws on invalid JSON', () => {
-    expect(() => parseBackup('not json')).toThrow();
+    expect(() => parseBackup(text)).toThrow(BackupError);
+    try {
+      parseBackup(text);
+    } catch (err) {
+      expect((err as BackupError).problems).toHaveLength(2);
+      expect((err as Error).message).toMatch(/^Import refused: 2 problems\n {2}attempt #1/);
+    }
   });
 });
 
-describe('createBackup', () => {
-  it('builds a versioned payload with sorted outcomes and clean attempts', () => {
-    const now = new Date('2026-11-15T12:00:00Z');
-    const kb = { ...attempt, id: 'k', kind: 'kilterboard' as const, boardAngle: 40 };
-    const extra = { ...attempt, id: 'x', extra: 'dropped' } as typeof attempt;
-    const backup = createBackup(
-      [kb, extra],
-      [
-        { name: 'z', category: 'skip' },
-        { name: 'a', category: 'success' },
-      ],
-      now,
-    );
-    expect(backup).toEqual({
-      version: '1.2.0',
-      exportedAt: '2026-11-15T12:00:00.000Z',
-      outcomes: [
-        { name: 'a', category: 'success' },
-        { name: 'z', category: 'skip' },
-      ],
-      attempts: [kb, { ...attempt, id: 'x' }],
-    });
+describe('versionProblem', () => {
+  it('accepts the same 0.1 with a patch up to ours', () => {
+    expect(versionProblem('clog 0.1.0')).toBeNull();
+  });
+  it('refuses legacy, newer and older versions', () => {
+    expect(versionProblem('1.2.0')).toMatch(/not a clog backup version.*convert/);
+    expect(versionProblem(undefined)).toMatch(/not a clog backup version/);
+    expect(versionProblem('clog 0.1.1')).toMatch(/newer than this app/);
+    expect(versionProblem('clog 0.2.0')).toMatch(/newer/);
+    expect(versionProblem('clog 1.0.0')).toMatch(/newer/);
+    expect(versionProblem('clog 0.0.9')).toMatch(/older than this app/);
+  });
+});
+
+describe('validateBackup', () => {
+  it('accepts a valid backup', () => {
+    expect(validateBackup(backup())).toEqual([]);
   });
 
-  it('round-trips through parseBackup', () => {
-    const attempts = [attempt, { ...attempt, id: 'b', loggedAt: '2026-11-02T10:00:00.000Z' }];
-    const outcomes = [{ name: 'flash', category: 'success' as const }];
-    const parsed = parseBackup(JSON.stringify(createBackup(attempts, outcomes)));
-    expect(parsed).toEqual({ attempts, outcomes });
+  it('refuses non-objects and legacy shapes', () => {
+    expect(validateBackup([attempt])).toEqual([
+      'the file is not a clog backup (expected a JSON object)',
+    ]);
+    expect(validateBackup(backup({ version: '1.2.0' }))).toHaveLength(1);
+  });
+
+  it('checks outcomes: normalised, unique, known category', () => {
+    expect(
+      validateBackup(backup({ outcomes: [...outcomes, { name: 'Flash ', category: 'x' }] })),
+    ).toEqual([
+      'outcome #3: name "Flash " is not normalised (expected "flash")',
+      'outcome #3 "Flash ": category must be one of success, failure, work (got "x")',
+    ]);
+    expect(validateBackup(backup({ outcomes: [...outcomes, outcomes[0]] }))).toEqual([
+      'outcome #3: "flash" is defined twice',
+    ]);
+    expect(validateBackup(backup({ outcomes: 'none' }))).toContain('"outcomes" must be a list');
+  });
+
+  it('checks the fixed fields of attempts', () => {
+    expect(problemsWith({ location: '' })).toEqual(['attempt #1 (id a1…): missing location']);
+    expect(problemsWith({ activity: 'ice' })).toEqual([
+      'attempt #1 (id a1…): unknown activity "ice"',
+    ]);
+    expect(problemsWith({ outcome: 'sent' })).toEqual([
+      'attempt #1 (id a1…): outcome "sent" is not defined',
+    ]);
+    expect(problemsWith({ loggedAt: 'yesterday' })).toEqual([
+      'attempt #1 (id a1…): loggedAt "yesterday" is not a valid time',
+    ]);
+  });
+
+  it('checks values: text, cleaned, known fields', () => {
+    expect(problemsWith({ angle: 40 })).toEqual([
+      'attempt #1 (id a1…): angle must be text (got 40)',
+    ]);
+    expect(problemsWith({ location: ' BW  Ost' })).toEqual([
+      'attempt #1 (id a1…): location " BW  Ost" is not cleaned (extra spaces?)',
+    ]);
+    expect(problemsWith({ kind: 'bouldering' })).toEqual([
+      'attempt #1 (id a1…): unknown field "kind"',
+    ]);
+  });
+
+  it('allows case differences in values and fields not listed for the activity', () => {
+    expect(problemsWith({ location: 'bw ost', grade: '6A' })).toEqual([]);
+    expect(problemsWith({ activity: 'boulder' })).toEqual([]); // has an angle, still valid
+  });
+
+  it('refuses duplicate ids and reports every problem', () => {
+    expect(validateBackup(backup({ attempts: [attempt, attempt] }))).toEqual([
+      'attempt #2 (id a1…): duplicate id',
+    ]);
+    expect(validateBackup(backup({ attempts: [{}, 5] }))).toEqual([
+      'attempt #1: missing id',
+      'attempt #1: missing loggedAt',
+      'attempt #1: missing activity',
+      'attempt #1: missing location',
+      'attempt #1: missing outcome',
+      'attempt #2: not an object',
+    ]);
   });
 });
 

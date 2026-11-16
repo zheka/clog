@@ -7,7 +7,7 @@ import { byId, escapeHtml } from './dom';
 const BADGE_CLASS: Record<Category, string> = {
   success: 'entry-status-green',
   failure: 'entry-status-red',
-  skip: 'entry-status-gray',
+  work: 'entry-status-gray',
 };
 
 const PIN_ICON =
@@ -45,7 +45,7 @@ export function mountHistoryView(store: Store, onEdit: (id: string) => void): vo
     headerEl.innerHTML = `
       <div class="group-header-left">
         ${PIN_ICON}
-        <span>${escapeHtml(session.location)} &bull; ${session.kind} &bull; <span class="group-date">${session.dateString}</span></span>
+        <span>${escapeHtml(session.location)} &bull; ${escapeHtml(session.activity)} &bull; <span class="group-date">${session.dateString}</span></span>
       </div>
       ${CHEVRON_ICON}
     `;
@@ -84,8 +84,8 @@ export function mountHistoryView(store: Store, onEdit: (id: string) => void): vo
           </div>
         </div>
       `;
-    if (entry.kind === 'kilterboard' && entry.boardAngle !== undefined) {
-      html += `<div class="entry-details-row"><span class="detail-tag">Angle: ${entry.boardAngle}&deg;</span></div>`;
+    if (entry.angle) {
+      html += `<div class="entry-details-row"><span class="detail-tag">Angle: ${escapeHtml(entry.angle)}&deg;</span></div>`;
     }
     card.innerHTML = html;
     card.querySelector('.edit-btn')!.addEventListener('click', () => onEdit(entry.id));

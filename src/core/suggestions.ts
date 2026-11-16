@@ -1,6 +1,7 @@
 import type { Attempt, Outcome } from './types';
 
-type TextField = 'location' | 'grade';
+/** A text field of an attempt: `location` or an activity field such as `grade`. */
+type TextField = string;
 
 const sameText = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
 

@@ -1,9 +1,9 @@
-import type { Attempt, Kind } from './types';
+import type { Attempt } from './types';
 
 export interface Session {
   key: string;
   location: string;
-  kind: Kind;
+  activity: string;
   /** Short local date, e.g. "Nov 15". */
   dateString: string;
   /** Newest first. */
@@ -16,8 +16,8 @@ export function formatDay(iso: string): string {
 
 /**
  * Groups attempts (stored oldest first) into sessions, newest first.
- * A session is a run of consecutive attempts with the same location, kind and local day;
- * interleaving another location or kind starts a new session.
+ * A session is a run of consecutive attempts with the same activity, location and local day;
+ * interleaving another activity or location starts a new session.
  */
 export function groupIntoSessions(attempts: Attempt[]): Session[] {
   const sessions: Session[] = [];
@@ -25,12 +25,12 @@ export function groupIntoSessions(attempts: Attempt[]): Session[] {
 
   for (const entry of [...attempts].reverse()) {
     const location = entry.location || 'Unknown Location';
-    const kind = entry.kind || 'bouldering';
+    const activity = entry.activity;
     const dateString = formatDay(entry.loggedAt);
-    const key = `${location}___${kind}___${dateString}`;
+    const key = `${activity}___${location}___${dateString}`;
 
     if (!current || current.key !== key) {
-      current = { key, location, kind, dateString, entries: [] };
+      current = { key, activity, location, dateString, entries: [] };
       sessions.push(current);
     }
     current.entries.push(entry);

@@ -1,9 +1,11 @@
 # Clog design
 
 Decisions for the next iterations of Clog: fixing UI quirks and the new data model
-(backup format `clog 0.1.0`). Status: **agreed, not yet implemented** (2026-11-16). The current
-app (backup format `1.2.0`) is described by the code and its tests; this document describes
-where it is going.
+(backup format `clog 0.1.0`).
+
+Status (2026-11-16): agreed. Step 1 of the implementation plan (the data schema) is done; the
+rest describes where the app is going. Where the app differs from this document, the code and
+its tests describe the current behaviour.
 
 ## Goals and principles
 
@@ -144,7 +146,7 @@ export const config = {
     failure: '#d64545',
     work: '#8a8a99',
   },
-  sameSessionHours: 2,
+  sameSessionHours: 4,
 } satisfies AppConfig;
 ```
 
@@ -416,10 +418,11 @@ Rules for every chip row:
 
 ## Implementation plan
 
-1. `src/config.ts`, the `clog 0.1.0` schema and the `clog` storage key; the `convert-legacy`
-   script.
-2. Strict import with an error report and legacy-key cleanup; the other `npm run backup`
-   scripts.
+1. **Done:** `src/config.ts`, the `clog 0.1.0` schema, the `clog` storage key with legacy-key
+   cleanup, and strict import (problems are listed in the existing alert for now). The single
+   existing backup was converted by a one-off script outside the repo, so a `convert-legacy`
+   script is no longer needed.
+2. The `npm run backup` scripts (`check`, `upgrade`, `rename-outcome`).
 3. The generic form: context, activity fields and outcome, chip rules, required fields, inline
    messages.
 4. The remaining quirk fixes: two-tap delete and import confirmation, highlight, fallback style.

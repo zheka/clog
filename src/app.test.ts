@@ -6,8 +6,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import indexHtml from '../index.html?raw';
 
-const HISTORY_KEY = 'climb_attempts_history';
-const OUTCOMES_KEY = 'climb_outcomes_registry';
+const STORAGE_KEY = 'clog';
+const LEGACY_KEYS = ['climb_attempts_history', 'climb_outcomes_registry'];
 const NOW = new Date('2026-11-15T12:00:00Z');
 
 type Raw = Record<string, unknown>;
@@ -21,8 +21,9 @@ function q<T extends HTMLElement = HTMLElement>(sel: string, root: ParentNode = 
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 const texts = (sel: string) => [...document.querySelectorAll(sel)].map((e) => e.textContent.trim());
-const stored = (): Raw[] => JSON.parse(localStorage.getItem(HISTORY_KEY) ?? '[]');
-const storedOutcomes = (): Raw[] => JSON.parse(localStorage.getItem(OUTCOMES_KEY) ?? '[]');
+const storedData = () => JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}');
+const stored = (): Raw[] => storedData().attempts ?? [];
+const storedOutcomes = (): Raw[] => storedData().outcomes ?? [];
 
 function type(id: string, value: string) {
   const el = $<HTMLInputElement>(id);
@@ -40,7 +41,7 @@ function attempt(overrides: Raw = {}): Raw {
   return {
     id: 'a1',
     loggedAt: '2026-11-14T12:00:00.000Z',
-    kind: 'bouldering',
+    activity: 'boulder',
     location: 'BW Ost',
     grade: 'v4',
     outcome: 'flash',
@@ -51,18 +52,28 @@ function attempt(overrides: Raw = {}): Raw {
 const OUTCOMES = [
   { name: 'flash', category: 'success' },
   { name: 'fell', category: 'failure' },
-  { name: 'skipped', category: 'skip' },
+  { name: 'learning', category: 'work' },
 ];
 
 let alertMock: ReturnType<typeof vi.fn>;
 let confirmMock: ReturnType<typeof vi.fn>;
 
-/** `null` = leave that localStorage key unset (a fresh install). */
-async function start(attempts?: unknown, outcomes: unknown = OUTCOMES) {
+/**
+ * Loads the app with saved data. `start(undefined, null)` = nothing saved (a fresh install).
+ * `raw` items are written to localStorage as they are, before the saved data.
+ */
+async function start(
+  attempts?: unknown[],
+  outcomes: unknown[] | null = OUTCOMES,
+  raw: Record<string, string> = {},
+) {
   document.body.innerHTML = new DOMParser().parseFromString(indexHtml, 'text/html').body.innerHTML;
   localStorage.clear();
-  if (attempts !== undefined) localStorage.setItem(HISTORY_KEY, JSON.stringify(attempts));
-  if (outcomes !== null) localStorage.setItem(OUTCOMES_KEY, JSON.stringify(outcomes));
+  for (const [key, value] of Object.entries(raw)) localStorage.setItem(key, value);
+  if (attempts !== undefined || outcomes !== null) {
+    const data = { version: 'clog 0.1.0', outcomes: outcomes ?? [], attempts: attempts ?? [] };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  }
   vi.resetModules();
   await import('./main');
 }
@@ -88,15 +99,25 @@ describe('loading and history list', () => {
     expect($('historyList').textContent).toContain('No attempts logged yet.');
   });
 
-  it('normalizes legacy stored data (timestamp, missing kind/id)', async () => {
-    await start([
-      { timestamp: '2026-11-14T12:00:00Z', location: 'Gym', grade: '6a', outcome: 'flash' },
-    ]);
-    expect(texts('.grade-badge')).toEqual(['6a']);
-    expect(texts('.group-header')[0]).toContain('Gym • bouldering');
+  it('ignores data saved by the pre-0.1.0 app and starts empty', async () => {
+    await start(undefined, null, {
+      climb_attempts_history: JSON.stringify([attempt()]),
+      climb_outcomes_registry: JSON.stringify(OUTCOMES),
+    });
+    expect($('historyList').textContent).toContain('No attempts logged yet.');
+    expect(localStorage.getItem('climb_attempts_history')).not.toBeNull();
   });
 
-  it('groups consecutive entries by location, kind and day, newest first', async () => {
+  it('keeps a copy of unreadable saved data and starts empty', async () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const bad = JSON.stringify({ version: '1.2.0', attempts: [attempt()] });
+    await start(undefined, null, { clog: bad });
+    expect($('historyList').textContent).toContain('No attempts logged yet.');
+    expect(localStorage.getItem('clog_unreadable')).toBe(bad);
+    expect(spy).toHaveBeenCalled();
+  });
+
+  it('groups consecutive entries by activity, location and day, newest first', async () => {
     await start([
       attempt({ id: 'a1', loggedAt: '2026-11-14T12:00:00Z', location: 'A', grade: 'v1' }),
       attempt({ id: 'a2', loggedAt: '2026-11-14T13:00:00Z', location: 'A', grade: 'v2' }),
@@ -104,7 +125,7 @@ describe('loading and history list', () => {
         id: 'a3',
         loggedAt: '2026-11-14T14:00:00Z',
         location: 'B',
-        kind: 'route',
+        activity: 'route',
         grade: '6b',
       }),
       attempt({ id: 'a4', loggedAt: '2026-11-15T12:00:00Z', location: 'A', grade: 'v3' }),
@@ -114,7 +135,7 @@ describe('loading and history list', () => {
     const day = (iso: string) =>
       new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
     expect(q('.group-header', groups[0]).textContent).toContain(
-      `A • bouldering • ${day('2026-11-15T12:00:00Z')}`,
+      `A • boulder • ${day('2026-11-15T12:00:00Z')}`,
     );
     expect(q('.group-header', groups[1]).textContent).toContain('B • route');
     expect([...groups[2].querySelectorAll('.grade-badge')].map((e) => e.textContent)).toEqual([
@@ -131,13 +152,13 @@ describe('loading and history list', () => {
     await start([
       attempt({ id: 's', outcome: 'flash' }),
       attempt({ id: 'f', outcome: 'fell', loggedAt: '2026-11-14T12:01:00Z' }),
-      attempt({ id: 'k', outcome: 'skipped', loggedAt: '2026-11-14T12:02:00Z' }),
+      attempt({ id: 'k', outcome: 'learning', loggedAt: '2026-11-14T12:02:00Z' }),
       // quirk: outcomes missing from the registry render as failures
       attempt({ id: 'u', outcome: 'mystery', loggedAt: '2026-11-14T12:03:00Z' }),
       attempt({
         id: 'kb',
-        kind: 'kilterboard',
-        boardAngle: 40,
+        activity: 'kilter',
+        angle: '40',
         outcome: 'flash',
         loggedAt: '2026-11-14T12:04:00Z',
       }),
@@ -163,13 +184,13 @@ describe('loading and history list', () => {
 });
 
 describe('new entry modal', () => {
-  it('prefills from the last entry and collapses context within 2 hours', async () => {
+  it('prefills from the last entry and collapses context within 4 hours', async () => {
     await start([
       attempt({ id: 'old', location: 'Elsewhere', loggedAt: '2026-11-01T12:00:00Z' }),
       attempt({
         id: 'last',
-        kind: 'kilterboard',
-        boardAngle: 40,
+        activity: 'kilter',
+        angle: '40',
         location: 'BW Ost',
         grade: 'v5',
         loggedAt: '2026-11-15T11:00:00Z',
@@ -183,14 +204,18 @@ describe('new entry modal', () => {
     expect($<HTMLInputElement>('gradeInput').value).toBe('v5');
     expect($<HTMLInputElement>('boardAngleInput').value).toBe('40');
     expect($('boardAngleGroup').style.display).toBe('flex');
-    expect(q('.kind-tab.active').getAttribute('data-kind')).toBe('kilterboard');
+    expect(q('.activity-tab.active').getAttribute('data-activity')).toBe('kilter');
     expect($('contextBody').classList.contains('hidden')).toBe(true);
     expect($('contextToggleLink').textContent).toBe('Change');
-    expect($('contextSummaryText').textContent).toBe('BW Ost • kilterboard');
+    expect($('contextSummaryText').textContent).toBe('BW Ost • kilter');
   });
 
-  it('expands context when the last entry is older than 2 hours, or with no history', async () => {
-    await start([attempt({ loggedAt: '2026-11-15T09:59:00Z' })]);
+  it('expands context when the last entry is older than 4 hours, or with no history', async () => {
+    await start([attempt({ loggedAt: '2026-11-15T08:01:00Z' })]);
+    $('openModalBtn').click();
+    expect($('contextBody').classList.contains('hidden')).toBe(true); // 3h59m: same session
+
+    await start([attempt({ loggedAt: '2026-11-15T07:59:00Z' })]);
     $('openModalBtn').click();
     expect($('contextBody').classList.contains('hidden')).toBe(false);
     expect($('contextToggleLink').textContent).toBe('Hide');
@@ -199,7 +224,18 @@ describe('new entry modal', () => {
     $('openModalBtn').click();
     expect($('contextBody').classList.contains('hidden')).toBe(false);
     expect($<HTMLInputElement>('locationInput').value).toBe('');
-    expect($('contextSummaryText').textContent).toBe('Unknown Location • bouldering');
+    expect($('contextSummaryText').textContent).toBe('Unknown Location • boulder');
+  });
+
+  it('shows one tab per configured activity, and the angle only for activities with it', async () => {
+    await start([attempt()]);
+    $('openModalBtn').click();
+    expect(texts('.activity-tab')).toEqual(['boulder', 'route', 'kilter']);
+    expect(q('.activity-tab.active').dataset.activity).toBe('boulder');
+    expect($('boardAngleGroup').style.display).toBe('none');
+    q('.activity-tab[data-activity="kilter"]').click();
+    expect($('boardAngleGroup').style.display).toBe('flex');
+    expect(texts('.cat-btn')).toEqual(['🟢 Success', '🔴 Failure', '⚪ Work']);
   });
 
   it('toggles the context section and updates its summary while typing', async () => {
@@ -209,8 +245,8 @@ describe('new entry modal', () => {
     expect($('contextBody').classList.contains('hidden')).toBe(false);
     expect($('contextToggleLink').textContent).toBe('Hide');
     type('locationInput', 'New Gym');
-    expect($('contextSummaryText').textContent).toBe('New Gym • bouldering');
-    q('[data-kind="route"]', $('contextBody')).click();
+    expect($('contextSummaryText').textContent).toBe('New Gym • boulder');
+    q('[data-activity="route"]', $('contextBody')).click();
     expect($('contextSummaryText').textContent).toBe('New Gym • route');
     expect($('boardAngleGroup').style.display).toBe('none');
   });
@@ -238,7 +274,7 @@ describe('new entry modal', () => {
     expect(texts('#locationChips .chip-small')).toEqual(['Gym1', 'Gym4', 'Gym3']);
     clickChip('locationChips', 'Gym1');
     expect($<HTMLInputElement>('locationInput').value).toBe('Gym1');
-    expect($('contextSummaryText').textContent).toBe('Gym1 • bouldering');
+    expect($('contextSummaryText').textContent).toBe('Gym1 • boulder');
   });
 
   it('suggests grades the same way', async () => {
@@ -250,7 +286,7 @@ describe('new entry modal', () => {
   });
 
   it('fills the angle from angle chips', async () => {
-    await start([attempt({ kind: 'kilterboard' })]);
+    await start([attempt({ activity: 'kilter' })]);
     $('openModalBtn').click();
     q('#angleChips [data-angle="45"]').click();
     expect($<HTMLInputElement>('boardAngleInput').value).toBe('45');
@@ -277,7 +313,7 @@ describe('new entry modal', () => {
 
 describe('logging attempts', () => {
   it('logs a new attempt when an outcome chip is clicked', async () => {
-    await start([attempt({ kind: 'kilterboard', boardAngle: 40 })]);
+    await start([attempt({ activity: 'kilter', angle: '40' })]);
     $('openModalBtn').click();
     type('gradeInput', 'v5');
     clickChip('frequentOutcomesRow', 'flash');
@@ -286,11 +322,11 @@ describe('logging attempts', () => {
     expect(all[1]).toEqual({
       id: expect.any(String),
       loggedAt: NOW.toISOString(),
-      kind: 'kilterboard',
+      activity: 'kilter',
       location: 'BW Ost',
       grade: 'v5',
       outcome: 'flash',
-      boardAngle: 40,
+      angle: '40',
     });
     expect(all[1].id).not.toBe('a1');
     expect($('modalOverlay').classList.contains('active')).toBe(false);
@@ -307,7 +343,7 @@ describe('logging attempts', () => {
   });
 
   it('omits the board angle when empty or not kilterboard', async () => {
-    await start([attempt({ kind: 'kilterboard', boardAngle: 40 })]);
+    await start([attempt({ activity: 'kilter', angle: '40' })]);
     $('openModalBtn').click();
     type('boardAngleInput', '');
     clickChip('frequentOutcomesRow', 'flash');
@@ -334,11 +370,11 @@ describe('custom outcomes', () => {
     expect($('categorySelectorRow').style.display).toBe('none');
     type('customOutcomeInput', 'x');
     expect($('categorySelectorRow').style.display).toBe('flex');
-    q('.cat-btn[data-cat="skip"]').click();
-    expect(q('.cat-btn[data-cat="skip"]').className).toBe('cat-btn selected-skip');
+    q('.cat-btn[data-cat="work"]').click();
+    expect(q('.cat-btn[data-cat="work"]').className).toBe('cat-btn selected-work');
     type('customOutcomeInput', '');
     expect($('categorySelectorRow').style.display).toBe('none');
-    expect(q('.cat-btn[data-cat="skip"]').className).toBe('cat-btn');
+    expect(q('.cat-btn[data-cat="work"]').className).toBe('cat-btn');
   });
 
   it('validates name and category', async () => {
@@ -349,7 +385,7 @@ describe('custom outcomes', () => {
     type('customOutcomeInput', 'sloppy heel');
     $('saveCustomOutcomeBtn').click();
     expect(alertMock).toHaveBeenLastCalledWith(
-      'Please select whether this outcome is a Success, Failure, or Skip.',
+      'Please select whether this outcome is a Success, Failure, or Work.',
     );
     expect(stored()).toHaveLength(1);
   });
@@ -401,13 +437,13 @@ describe('custom outcomes', () => {
     $('openModalBtn').click();
     expect(
       [...$('outcomes-list').querySelectorAll('option')].map((o) => o.getAttribute('value')),
-    ).toEqual(['fell', 'flash', 'skipped']);
+    ).toEqual(['fell', 'flash', 'learning']);
   });
 });
 
 describe('editing and deleting', () => {
   const data = () => [
-    attempt({ id: 'a1', kind: 'kilterboard', boardAngle: 40, grade: 'v3' }),
+    attempt({ id: 'a1', activity: 'kilter', angle: '40', grade: 'v3' }),
     attempt({ id: 'a2', loggedAt: '2026-11-14T13:00:00Z', grade: 'v4' }),
   ];
 
@@ -435,20 +471,20 @@ describe('editing and deleting', () => {
     expect(stored()[0]).toEqual({
       id: 'a1',
       loggedAt: '2026-11-14T12:00:00.000Z',
-      kind: 'kilterboard',
+      activity: 'kilter',
       location: 'BW Ost',
       grade: 'v6',
       outcome: 'fell',
-      boardAngle: 45,
+      angle: '45',
     });
   });
 
-  it('drops the board angle when the kind changes', async () => {
+  it('drops the board angle when the activity changes', async () => {
     await start(data());
     edit('a1');
-    q('.kind-tab[data-kind="route"]').click();
+    q('.activity-tab[data-activity="route"]').click();
     clickChip('frequentOutcomesRow', 'flash');
-    expect(stored()[0].kind).toBe('route');
+    expect(stored()[0].activity).toBe('route');
     expect(stored()[0]).not.toHaveProperty('boardAngle');
   });
 
@@ -520,39 +556,28 @@ describe('backup menu', () => {
       expect($('menuModalOverlay').classList.contains('active')).toBe(true);
     });
 
-    it('downloads a versioned backup and closes the menu', async () => {
+    it('downloads a clog 0.1.0 backup and closes the menu', async () => {
       const outcomes = [
-        { name: 'zz', category: 'skip' },
+        { name: 'zz', category: 'work' },
         { name: 'aa', category: 'success' },
       ];
-      await start(
-        [
-          attempt(),
-          attempt({
-            id: 'k',
-            kind: 'kilterboard',
-            boardAngle: 40,
-            loggedAt: '2026-11-14T13:00:00Z',
-          }),
-        ],
-        outcomes,
-      );
+      const kilter = attempt({
+        id: 'k',
+        activity: 'kilter',
+        angle: '40',
+        loggedAt: '2026-11-14T13:00:00Z',
+        outcome: 'aa',
+      });
+      await start([attempt({ outcome: 'zz' }), kilter], outcomes);
       $('openMenuBtn').click();
       $('exportJsonBtn').click();
       expect(downloadName).toBe('clog_backup_2026-11-15.json');
       expect(blob!.type).toBe('application/json;charset=utf-8;');
-      const payload = JSON.parse(await blob!.text());
-      expect(payload).toEqual({
-        version: '1.2.0',
+      expect(JSON.parse(await blob!.text())).toEqual({
+        version: 'clog 0.1.0',
         exportedAt: NOW.toISOString(),
         outcomes: [outcomes[1], outcomes[0]],
-        attempts: [
-          { ...attempt(), loggedAt: '2026-11-14T12:00:00.000Z' },
-          {
-            ...attempt({ id: 'k', kind: 'kilterboard', boardAngle: 40 }),
-            loggedAt: '2026-11-14T13:00:00Z',
-          },
-        ],
+        attempts: [attempt({ outcome: 'zz' }), kilter],
       });
       expect($('menuModalOverlay').classList.contains('active')).toBe(false);
     });
@@ -569,16 +594,18 @@ describe('backup menu', () => {
     }
 
     const backup = {
-      version: '1.2.0',
-      outcomes: [{ name: 'sent', category: 'success' }],
+      version: 'clog 0.1.0',
+      exportedAt: '2026-11-16T09:00:00.000Z',
+      outcomes: [{ name: 'send', category: 'success' }],
       attempts: [
-        attempt({ id: 'b2', loggedAt: '2026-11-10T13:00:00Z', outcome: 'sent' }),
-        attempt({ id: 'b1', loggedAt: '2026-11-10T12:00:00Z', outcome: 'sent' }),
+        attempt({ id: 'b2', loggedAt: '2026-11-10T13:00:00Z', outcome: 'send' }),
+        attempt({ id: 'b1', loggedAt: '2026-11-10T12:00:00Z', outcome: 'send' }),
       ],
     };
+    const legacy = { climb_attempts_history: '[]', climb_outcomes_registry: '[]' };
 
-    it('replaces existing data after confirmation', async () => {
-      await start([attempt()]);
+    it('replaces existing data after confirmation, then removes the legacy keys', async () => {
+      await start([attempt()], OUTCOMES, legacy);
       $('openMenuBtn').click();
       importFile(JSON.stringify(backup));
       await vi.waitFor(() =>
@@ -587,35 +614,62 @@ describe('backup menu', () => {
       expect(confirmMock).toHaveBeenCalledWith(
         'Importing this backup will completely REPLACE your existing 1 local entries with the 2 entries from the file.\n\nProceed?',
       );
+      expect(storedData().version).toBe('clog 0.1.0');
       expect(stored().map((a) => a.id)).toEqual(['b1', 'b2']);
       expect(storedOutcomes()).toEqual(backup.outcomes);
       expect(document.querySelectorAll('.entry-card')).toHaveLength(2);
       expect(q('.entry-status-badge').className).toContain('entry-status-green');
       expect($('menuModalOverlay').classList.contains('active')).toBe(false);
+      for (const key of LEGACY_KEYS) expect(localStorage.getItem(key)).toBeNull();
     });
 
-    it('keeps data when the user cancels', async () => {
+    it('keeps data and legacy keys when the user cancels', async () => {
       confirmMock.mockReturnValue(false);
-      await start([attempt()]);
+      await start([attempt()], OUTCOMES, legacy);
       importFile(JSON.stringify(backup));
       await vi.waitFor(() => expect(confirmMock).toHaveBeenCalled());
       expect(stored().map((a) => a.id)).toEqual(['a1']);
       expect(storedOutcomes()).toEqual(OUTCOMES);
       expect(alertMock).not.toHaveBeenCalled();
+      for (const key of LEGACY_KEYS) expect(localStorage.getItem(key)).toBe('[]');
     });
 
-    it('does not ask when there is no local data, and keeps outcomes if the file has none', async () => {
-      await start(undefined);
-      importFile(JSON.stringify(backup.attempts));
+    it('does not ask when there is no local data', async () => {
+      await start(undefined, null);
+      importFile(JSON.stringify(backup));
       await vi.waitFor(() => expect(alertMock).toHaveBeenCalled());
       expect(confirmMock).not.toHaveBeenCalled();
       expect(stored()).toHaveLength(2);
-      expect(storedOutcomes()).toEqual(OUTCOMES);
     });
 
-    it('rejects files without valid attempts', async () => {
+    it('refuses files with problems, listing them, and keeps everything', async () => {
+      await start([attempt()], OUTCOMES, legacy);
+      const broken = {
+        ...backup,
+        attempts: [attempt({ id: 'x', outcome: 'sent', activity: 'ice' })],
+      };
+      importFile(JSON.stringify(broken));
+      await vi.waitFor(() => expect(alertMock).toHaveBeenCalled());
+      expect(alertMock.mock.calls[0][0]).toBe(
+        'Failed to import JSON file: Import refused: 2 problems\n' +
+          '  attempt #1 (id x…): unknown activity "ice"\n' +
+          '  attempt #1 (id x…): outcome "sent" is not defined',
+      );
+      expect(stored().map((a) => a.id)).toEqual(['a1']);
+      for (const key of LEGACY_KEYS) expect(localStorage.getItem(key)).toBe('[]');
+    });
+
+    it('refuses old-format backups', async () => {
       await start([attempt()]);
-      importFile(JSON.stringify({ attempts: [{ id: 'x' }] }));
+      importFile(JSON.stringify({ ...backup, version: '1.2.0' }));
+      await vi.waitFor(() => expect(alertMock).toHaveBeenCalled());
+      expect(alertMock.mock.calls[0][0]).toMatch(/version "1\.2\.0" is not a clog backup version/);
+      expect(stored().map((a) => a.id)).toEqual(['a1']);
+    });
+
+    it('rejects files without attempts', async () => {
+      await start([attempt()]);
+      importFile(JSON.stringify({ ...backup, attempts: [] }));
       await vi.waitFor(() =>
         expect(alertMock).toHaveBeenCalledWith(
           'No valid climbing attempts found in the selected file.',

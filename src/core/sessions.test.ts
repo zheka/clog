@@ -7,17 +7,17 @@ describe('groupIntoSessions', () => {
     expect(groupIntoSessions([])).toEqual([]);
   });
 
-  it('groups consecutive attempts with the same location, kind and day, newest first', () => {
+  it('groups consecutive attempts with the same activity, location and day, newest first', () => {
     const a1 = makeAttempt({ loggedAt: '2026-11-14T12:00:00Z' });
     const a2 = makeAttempt({ loggedAt: '2026-11-14T13:00:00Z' });
-    const b = makeAttempt({ loggedAt: '2026-11-14T14:00:00Z', kind: 'route' });
+    const b = makeAttempt({ loggedAt: '2026-11-14T14:00:00Z', activity: 'route' });
     const c = makeAttempt({ loggedAt: '2026-11-15T12:00:00Z' });
     const sessions = groupIntoSessions([a1, a2, b, c]);
 
     expect(sessions.map((s) => s.entries)).toEqual([[c], [b], [a2, a1]]);
     expect(sessions[2]).toMatchObject({
       location: 'BW Ost',
-      kind: 'bouldering',
+      activity: 'boulder',
       dateString: formatDay('2026-11-14T12:00:00Z'),
     });
   });

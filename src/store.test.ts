@@ -4,11 +4,10 @@ import { makeAttempt } from './core/test-helpers';
 import { createStore, type State } from './store';
 
 const input: AttemptInput = {
-  kind: 'bouldering',
+  activity: 'boulder',
   location: 'BW Ost',
-  grade: 'v5',
   outcome: 'flash',
-  boardAngle: null,
+  fields: { grade: 'v5' },
 };
 
 function setup(initial: Partial<State> = {}) {
@@ -26,37 +25,42 @@ describe('store', () => {
     expect(added).toEqual({
       id: expect.any(String),
       loggedAt: expect.any(String),
-      ...input,
-      boardAngle: undefined,
+      activity: 'boulder',
+      location: 'BW Ost',
+      grade: 'v5',
+      outcome: 'flash',
     });
-    expect(added).not.toHaveProperty('boardAngle');
     expect(store.getState().attempts).toEqual([added]);
     expect(save).toHaveBeenCalledWith(store.getState());
     expect(listener).toHaveBeenCalledWith(store.getState(), { attempts: [], outcomes: [] });
   });
 
-  it('keeps the board angle only for kilterboard', () => {
+  it('stores the activity fields it is given', () => {
     const { store } = setup();
-    expect(store.addAttempt({ ...input, kind: 'kilterboard', boardAngle: 40 }).boardAngle).toBe(40);
-    expect(store.addAttempt({ ...input, boardAngle: 40 })).not.toHaveProperty('boardAngle');
+    const added = store.addAttempt({
+      ...input,
+      activity: 'kilter',
+      fields: { angle: '40', grade: 'v5' },
+    });
+    expect(added.angle).toBe('40');
   });
 
   it('updates an attempt without changing its id or time, or other attempts', () => {
-    const a = makeAttempt({ kind: 'kilterboard', boardAngle: 40 });
+    const a = makeAttempt({ activity: 'kilter', angle: '40' });
     const b = makeAttempt();
     const { store } = setup({ attempts: [a, b] });
-    store.updateAttempt(a.id, { ...input, kind: 'route' });
+    store.updateAttempt(a.id, { ...input, activity: 'route' });
     const [updated, other] = store.getState().attempts;
     expect(updated).toEqual({
       id: a.id,
       loggedAt: a.loggedAt,
-      ...input,
-      kind: 'route',
-      boardAngle: undefined,
+      activity: 'route',
+      location: 'BW Ost',
+      grade: 'v5',
+      outcome: 'flash',
     });
-    expect(updated).not.toHaveProperty('boardAngle');
     expect(other).toBe(b);
-    expect(a.kind).toBe('kilterboard'); // the original object is not mutated
+    expect(a.activity).toBe('kilter'); // the original object is not mutated
   });
 
   it('deletes an attempt', () => {
