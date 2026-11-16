@@ -318,7 +318,8 @@ main {
   backdrop-filter: blur(4px);
   display: flex;
   justify-content: center;
-  align-items: flex-end;
+  /* Sheets open from the top, so the keyboard (at the bottom) doesn't cover their inputs */
+  align-items: flex-start;
   z-index: 100;
   opacity: 0;
   pointer-events: none;
@@ -334,11 +335,12 @@ main {
   background: var(--card-bg);
   width: 100%;
   max-width: 412px;
-  border-top-left-radius: 20px;
-  border-top-right-radius: 20px;
+  border-bottom-left-radius: 20px;
+  border-bottom-right-radius: 20px;
   padding: 20px;
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5);
-  transform: translateY(100%);
+  padding-top: calc(20px + env(safe-area-inset-top, 0px));
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  transform: translateY(-100%);
   transition: transform 0.25s cubic-bezier(0.1, 0.9, 0.2, 1);
   max-height: 90vh;
   overflow-y: auto;
@@ -761,20 +763,4 @@ input[type='number']:focus {
 /* No fields (an activity without any): take no space */
 .activity-fields:empty {
   display: none;
-}
-
-/* The entry sheet opens from the top, so the keyboard (at the bottom) doesn't cover the fields */
-.modal-overlay.from-top {
-  align-items: flex-start;
-}
-
-.modal-overlay.from-top .modal-sheet {
-  border-radius: 0 0 20px 20px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-  transform: translateY(-100%);
-  padding-top: calc(20px + env(safe-area-inset-top, 0px));
-}
-
-.modal-overlay.from-top.active .modal-sheet {
-  transform: translateY(0);
 }

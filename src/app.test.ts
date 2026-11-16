@@ -501,7 +501,7 @@ describe('typing an outcome', () => {
 });
 
 describe('layout', () => {
-  it('opens the entry sheet from the top; chip rows are one line that scrolls sideways', async () => {
+  it('opens sheets from the top; chip rows are one line that scrolls sideways', async () => {
     await start([attempt()]);
     $('openModalBtn').click();
     expect(getComputedStyle($('modalOverlay')).alignItems).toBe('flex-start');
@@ -524,8 +524,8 @@ describe('layout', () => {
     const current = getComputedStyle(q('#chips-grade .chip-small.current'));
     expect(current.outlineOffset).toBe('-2px');
     expect(getComputedStyle(q('#outcomeChips .chip.current')).outlineOffset).toBe('-2px');
-    // the backup menu still opens from the bottom
-    expect(getComputedStyle($('menuModalOverlay')).alignItems).toBe('flex-end');
+    // every sheet opens from the top, the backup menu too
+    expect(getComputedStyle($('menuModalOverlay')).alignItems).toBe('flex-start');
   });
 });
 

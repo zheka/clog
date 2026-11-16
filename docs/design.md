@@ -361,8 +361,8 @@ be deleted once every device has switched over.
 
 Every input, outcome included, is **text first with a chip row below**.
 
-- The entry sheet **opens from the top** of the screen, so the keyboard (at the bottom) doesn't
-  cover the fields and their chips.
+- Every sheet (entry form and backup menu) **opens from the top** of the screen, so the keyboard
+  (at the bottom) doesn't cover the fields and their chips.
 - The keyboard's action key is **Done**: it closes the keyboard, nothing is saved.
 - Each chip row is **one line that scrolls sideways** (it never wraps), with at most
   `maxChips` (8) chips. Chip sizes are unchanged. A **fade at the edge** shows on whichever side
