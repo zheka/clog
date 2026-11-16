@@ -189,7 +189,7 @@ export function mountEntryModal(store: Store): EntryModal {
     )) {
       const chip = outcomeChip(outcome, getCategory(outcomes, outcome), () => logAttempt(outcome));
       // Highlight the field's current value
-      if (outcome === currentOutcome) chip.style.outline = '2px solid var(--text)';
+      if (outcome === currentOutcome) chip.classList.add('current');
     }
     if (name && !outcomes.some((o) => o.name === name)) {
       for (const category of CATEGORIES) {

@@ -343,7 +343,7 @@ main {
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 20px;
 }
 
 .modal-overlay.active .modal-sheet {
@@ -373,7 +373,7 @@ main {
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 label {
@@ -429,7 +429,7 @@ input[type='number']:focus {
 .context-collapsible-body {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 20px;
   background: var(--input-bg);
   border: 1px solid var(--border);
   border-top: none;
@@ -477,7 +477,7 @@ input[type='number']:focus {
 .outcome-row {
   display: flex;
   flex-wrap: nowrap;
-  gap: 6px;
+  gap: 8px;
   overflow-x: auto;
   overscroll-behavior-x: contain;
   scrollbar-width: none;
@@ -489,7 +489,7 @@ input[type='number']:focus {
 }
 
 .chips-container {
-  min-height: 28px;
+  min-height: 38px;
 }
 
 .outcome-row {
@@ -506,9 +506,14 @@ input[type='number']:focus {
   background: var(--chip-bg);
   border: 1px solid var(--chip-border);
   color: var(--text);
-  padding: 4px 10px;
-  border-radius: 14px;
-  font-size: 0.8rem;
+  padding: 8px 14px;
+  min-width: 48px;
+  min-height: 38px;
+  border-radius: 19px;
+  font-size: 0.95rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
   user-select: none;
   transition: background 0.15s ease;
@@ -705,14 +710,18 @@ input[type='number']:focus {
 }
 
 /* Chip with the field's current value */
-.chip-small.current {
+/* Chip with the field's current value. Drawn inside the chip's edge, so the scrolling row
+   doesn't clip it and neighbouring chips don't cover it. */
+.chip-small.current,
+.chip.current {
   outline: 2px solid var(--text);
+  outline-offset: -2px;
 }
 
 .activity-fields {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 20px;
 }
 
 /* No fields (an activity without any): take no space */

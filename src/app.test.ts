@@ -338,10 +338,10 @@ describe('new entry modal', () => {
     $('openModalBtn').click();
     expect(texts('#outcomeChips .chip')).toEqual(['e', 'c', 'a', 'b', 'd', 'f', 'g', 'h']);
     const chips = [...$('outcomeChips').children] as HTMLElement[];
-    expect(chips[0].className).toBe('chip success');
+    expect(chips[0].className).toBe('chip success current');
     // the last used outcome is highlighted
-    expect(chips[0].style.outline).not.toBe('');
-    expect(chips[1].style.outline).toBe('');
+    expect(chips[0].classList.contains('current')).toBe(true);
+    expect(chips[1].classList.contains('current')).toBe(false);
   });
 
   it('shows no outcome chips on a fresh install (empty registry)', async () => {
@@ -404,7 +404,7 @@ describe('typing an outcome', () => {
     $('openModalBtn').click();
     expect($<HTMLInputElement>('outcomeInput').value).toBe('');
     expect(texts('#outcomeChips .chip')).toEqual(['fell', 'flash', 'learning']);
-    expect(q('#outcomeChips .chip').style.outline).not.toBe('');
+    expect(q('#outcomeChips .chip').classList.contains('current')).toBe(true);
   });
 
   it('shows only matching outcomes while typing, no backfill', async () => {
@@ -487,6 +487,12 @@ describe('layout', () => {
       const row = getComputedStyle($(id));
       expect([id, row.flexWrap, row.overflowX]).toEqual([id, 'nowrap', 'auto']);
     }
+    // field chips have a minimum tap size; the highlight is drawn inside the chip
+    const chip = getComputedStyle(q('#chips-grade .chip-small'));
+    expect([chip.minWidth, chip.minHeight]).toEqual(['48px', '38px']);
+    const current = getComputedStyle(q('#chips-grade .chip-small.current'));
+    expect(current.outlineOffset).toBe('-2px');
+    expect(getComputedStyle(q('#outcomeChips .chip.current')).outlineOffset).toBe('-2px');
     // the backup menu still opens from the bottom
     expect(getComputedStyle($('menuModalOverlay')).alignItems).toBe('flex-end');
   });
@@ -571,8 +577,8 @@ describe('editing and deleting', () => {
     edit('a1');
     const chip = (t: string) =>
       [...$('outcomeChips').children].find((c) => c.textContent === t) as HTMLElement;
-    expect(chip('fell').style.outline).not.toBe('');
-    expect(chip('flash').style.outline).toBe('');
+    expect(chip('fell').classList.contains('current')).toBe(true);
+    expect(chip('flash').classList.contains('current')).toBe(false);
   });
 
   it('deletes only on the second tap', async () => {
