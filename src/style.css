@@ -128,7 +128,6 @@ main {
   font-weight: 700;
   color: var(--primary);
   padding: 8px 0;
-  border-bottom: 1px solid var(--border);
   text-transform: capitalize;
   cursor: pointer;
   user-select: none;
@@ -140,10 +139,16 @@ main {
   gap: 8px;
 }
 
-.group-header svg {
+/* The location pin (a filled icon) */
+.group-header-left svg {
   width: 16px;
   height: 16px;
   fill: currentColor;
+}
+
+/* Outline chevron in the text colour, like the one in the entry form's context bar */
+.group-header .group-chevron {
+  color: var(--text);
 }
 
 .group-chevron {

@@ -129,9 +129,16 @@ describe('loading and history list', () => {
     const day = (iso: string) =>
       new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
     expect(q('.group-header', groups[0]).textContent).toContain(
-      `A • boulder • ${day('2026-11-15T12:00:00Z')}`,
+      `${day('2026-11-15T12:00:00Z')} • A • boulder`,
     );
     expect(q('.group-header', groups[1]).textContent).toContain('B • route');
+    // header style: no line under it; the chevron is an outline in the text colour
+    const header = getComputedStyle(q('.group-header', groups[0]));
+    expect(header.borderBottomStyle).toMatch(/^(none|)$/);
+    const chevron = getComputedStyle(q('.group-chevron', groups[0]));
+    const formChevron = getComputedStyle(q('#contextHeader .group-chevron'));
+    expect([chevron.fill, chevron.color]).toEqual([formChevron.fill, formChevron.color]);
+    expect(chevron.fill).toBe('none');
     expect([...groups[2].querySelectorAll('.grade-badge')].map((e) => e.textContent)).toEqual([
       'v2',
       'v1',
