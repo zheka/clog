@@ -1,21 +1,74 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <!-- CLog app icon: a faceted climbing hold with its bolt, on the app's dark background.
-       Kept within the central safe zone so Android's masks don't cut it. -->
-  <rect width="512" height="512" fill="#121214"/>
-  <g transform="translate(256 256) scale(1.25) translate(-262 -256)">
-  <g stroke-linejoin="round" stroke-width="10">
-    <!-- facets, light from the top left -->
-    <polygon points="132,262 176,170 262,256" fill="#60a5fa" stroke="#60a5fa"/>
-    <polygon points="176,170 296,132 262,256" fill="#93c5fd" stroke="#93c5fd"/>
-    <polygon points="296,132 382,196 262,256" fill="#60a5fa" stroke="#60a5fa"/>
-    <polygon points="382,196 390,300 262,256" fill="#3b82f6" stroke="#3b82f6"/>
-    <polygon points="390,300 300,374 262,256" fill="#2563eb" stroke="#2563eb"/>
-    <polygon points="300,374 182,356 262,256" fill="#1d4ed8" stroke="#1d4ed8"/>
-    <polygon points="182,356 132,262 262,256" fill="#2563eb" stroke="#2563eb"/>
+  <!-- CLog icon: four gym holds rising across a white wall, like a route. Shaded volume, shadows,
+       pockets and small bolts, after real hold sets. Kept inside Android's round safe zone. -->
+  <defs>
+    <radialGradient id="yellow" cx="35%" cy="30%" r="85%">
+      <stop offset="0" stop-color="#fff38a"/><stop offset=".55" stop-color="#f5cf12"/><stop offset="1" stop-color="#b98c00"/>
+    </radialGradient>
+    <radialGradient id="red" cx="35%" cy="30%" r="85%">
+      <stop offset="0" stop-color="#ff6b5e"/><stop offset=".55" stop-color="#e3261c"/><stop offset="1" stop-color="#94120c"/>
+    </radialGradient>
+    <radialGradient id="blue" cx="35%" cy="30%" r="85%">
+      <stop offset="0" stop-color="#4da3ff"/><stop offset=".55" stop-color="#1d6fd6"/><stop offset="1" stop-color="#0d3f88"/>
+    </radialGradient>
+    <radialGradient id="green" cx="35%" cy="30%" r="85%">
+      <stop offset="0" stop-color="#3fd884"/><stop offset=".55" stop-color="#16a34a"/><stop offset="1" stop-color="#09602c"/>
+    </radialGradient>
+    <radialGradient id="pocket" cx="60%" cy="65%" r="70%">
+      <stop offset="0" stop-color="#000" stop-opacity=".05"/><stop offset="1" stop-color="#000" stop-opacity=".45"/>
+    </radialGradient>
+    <radialGradient id="washer" cx="40%" cy="35%" r="70%">
+      <stop offset="0" stop-color="#ffffff"/><stop offset=".6" stop-color="#c9ced6"/><stop offset="1" stop-color="#8b929c"/>
+    </radialGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="8"/>
+    </filter>
+    <!-- a small bolt: washer and hex socket -->
+    <g id="bolt">
+      <circle r="10" fill="url(#washer)" stroke="#6b7280" stroke-width="1.5"/>
+      <polygon points="0,-4.5 3.9,-2.25 3.9,2.25 0,4.5 -3.9,2.25 -3.9,-2.25" fill="#3f444b"/>
+    </g>
+    <!-- the hold outlines (each used for its shadow and its body) -->
+    <path id="fin" d="M 94 420 C 110 388, 150 346, 172 322 C 182 312, 194 316, 194 330
+                      C 194 356, 204 384, 210 402 C 216 420, 204 432, 182 430
+                      C 154 428, 120 430, 104 428 C 92 426, 90 424, 94 420 Z"/>
+    <path id="lumpy" d="M 160 300 C 156 268, 184 248, 214 254 C 238 238, 274 250, 278 280
+                        C 298 296, 290 334, 262 340 C 244 360, 204 358, 190 340
+                        C 164 336, 156 318, 160 300 Z"/>
+    <path id="kidney" d="M 258 218 C 252 188, 276 164, 308 168 C 330 150, 364 156, 372 180
+                         C 380 202, 366 222, 342 226 C 326 244, 298 246, 280 236
+                         C 268 234, 260 228, 258 218 Z"/>
+    <path id="edge" d="M 330 124 C 330 108, 344 94, 362 92 L 418 88 C 438 86, 452 98, 450 116
+                       L 446 146 C 444 164, 430 174, 412 174 L 362 172 C 342 172, 330 160, 330 144 Z"/>
+  </defs>
+
+  <rect width="512" height="512" fill="#f3f4f2"/>
+
+  <!-- each hold: shadow, body, pockets, bolt; placed as a zigzag route rising to the top right -->
+  <g transform="translate(6 12)">
+    <use href="#fin" fill="#000" opacity=".28" filter="url(#shadow)" transform="translate(8 13)"/>
+    <use href="#fin" fill="url(#yellow)"/>
+    <use href="#bolt" x="176" y="400"/>
   </g>
-  <!-- bolt: washer and hex socket -->
-  <circle cx="262" cy="256" r="36" fill="#9ca3af"/>
-  <circle cx="262" cy="256" r="28" fill="#d1d5db"/>
-  <polygon points="262,237 278,246 278,266 262,275 246,266 246,246" fill="#121214"/>
+  <g transform="translate(78 26)">
+    <use href="#lumpy" fill="#000" opacity=".28" filter="url(#shadow)" transform="translate(8 13)"/>
+    <use href="#lumpy" fill="url(#red)"/>
+    <ellipse cx="186" cy="304" rx="14" ry="11" fill="url(#pocket)"/>
+    <ellipse cx="250" cy="320" rx="13" ry="10" fill="url(#pocket)"/>
+    <ellipse cx="256" cy="274" rx="9" ry="7" fill="url(#pocket)"/>
+    <use href="#bolt" x="222" y="296"/>
+  </g>
+  <g transform="translate(-112 14)">
+    <use href="#kidney" fill="#000" opacity=".28" filter="url(#shadow)" transform="translate(8 13)"/>
+    <use href="#kidney" fill="url(#blue)"/>
+    <ellipse cx="350" cy="190" rx="11" ry="9" fill="url(#pocket)"/>
+    <use href="#bolt" x="304" y="204"/>
+  </g>
+  <g transform="translate(-38 -6)">
+    <use href="#edge" fill="#000" opacity=".28" filter="url(#shadow)" transform="translate(8 13)"/>
+    <use href="#edge" fill="url(#green)"/>
+    <path d="M 344 112 C 352 100, 368 98, 380 98 L 430 96" fill="none" stroke="#fff" stroke-opacity=".35"
+          stroke-width="5" stroke-linecap="round"/>
+    <use href="#bolt" x="392" y="134"/>
   </g>
 </svg>
