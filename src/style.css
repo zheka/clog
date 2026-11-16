@@ -370,6 +370,14 @@ main {
   line-height: 1;
 }
 
+/* The entry form: the same 20px between every section (context, each field, outcome, actions) */
+#entryForm,
+.activity-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
 .form-group {
   display: flex;
   flex-direction: column;
@@ -436,7 +444,8 @@ input[type='number']:focus {
   padding: 12px;
   border-bottom-left-radius: 8px;
   border-bottom-right-radius: 8px;
-  margin-top: -6px;
+  /* joins the context bar above it (cancels the group's 8px gap) */
+  margin-top: -8px;
 }
 
 .context-collapsible-body.hidden {
@@ -574,7 +583,6 @@ input[type='number']:focus {
 .form-actions {
   display: flex;
   gap: 10px;
-  margin-top: 6px;
 }
 
 .delete-btn {
@@ -716,12 +724,6 @@ input[type='number']:focus {
 .chip.current {
   outline: 2px solid var(--text);
   outline-offset: -2px;
-}
-
-.activity-fields {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
 }
 
 /* No fields (an activity without any): take no space */

@@ -487,6 +487,9 @@ describe('layout', () => {
       const row = getComputedStyle($(id));
       expect([id, row.flexWrap, row.overflowX]).toEqual([id, 'nowrap', 'auto']);
     }
+    // even spacing: the form and the activity fields both separate sections by 20px
+    expect(getComputedStyle($('entryForm')).rowGap).toBe('20px');
+    expect(getComputedStyle($('activityFields')).rowGap).toBe('20px');
     // field chips have a minimum tap size; the highlight is drawn inside the chip
     const chip = getComputedStyle(q('#chips-grade .chip-small'));
     expect([chip.minWidth, chip.minHeight]).toEqual(['48px', '38px']);
