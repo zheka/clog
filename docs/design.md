@@ -365,7 +365,8 @@ Every input, outcome included, is **text first with a chip row below**.
   (at the bottom) doesn't cover the fields and their chips.
 - The keyboard's action key is **Done**: it closes the keyboard, nothing is saved.
 - Each chip row is **one line that scrolls sideways** (it never wraps), with at most
-  `maxChips` (8) chips. Chip sizes are unchanged. A **fade at the edge** shows on whichever side
+  `maxChips` (8) chips. Every chip is at least 48×48px (Android's
+  recommended tap target), and a row without chips takes no space. A **fade at the edge** shows on whichever side
   has more chips to swipe to.
 
 Rules for every chip row:

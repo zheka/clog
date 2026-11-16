@@ -423,6 +423,17 @@ describe('typing an outcome', () => {
     expect(q('#outcomeChips .chip').classList.contains('current')).toBe(true);
   });
 
+  it('hides the outcome row while typed text matches no outcome', async () => {
+    await start([attempt()]);
+    $('openModalBtn').click();
+    const shown = (id: string) => getComputedStyle($(id)).display !== 'none';
+    expect(shown('outcomeChips')).toBe(true);
+    type('outcomeInput', 'zzz');
+    expect([shown('outcomeChips'), shown('newOutcomeChips')]).toEqual([false, true]);
+    type('outcomeInput', '');
+    expect([shown('outcomeChips'), shown('newOutcomeChips')]).toEqual([true, false]);
+  });
+
   it('shows only matching outcomes while typing, no backfill', async () => {
     await start([attempt()]);
     $('openModalBtn').click();
@@ -520,7 +531,9 @@ describe('layout', () => {
     expect(getComputedStyle($('activityFields')).rowGap).toBe('20px');
     // field chips have a minimum tap size; the highlight is drawn inside the chip
     const chip = getComputedStyle(q('#chips-grade .chip-small'));
-    expect([chip.minWidth, chip.minHeight]).toEqual(['48px', '38px']);
+    expect([chip.minWidth, chip.minHeight]).toEqual(['48px', '48px']);
+    const outcomeChip = getComputedStyle(q('#outcomeChips .chip'));
+    expect([outcomeChip.minWidth, outcomeChip.minHeight]).toEqual(['48px', '48px']);
     const current = getComputedStyle(q('#chips-grade .chip-small.current'));
     expect(current.outlineOffset).toBe('-2px');
     expect(getComputedStyle(q('#outcomeChips .chip.current')).outlineOffset).toBe('-2px');

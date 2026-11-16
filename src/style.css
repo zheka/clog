@@ -498,12 +498,10 @@ input[type='number']:focus {
   display: none;
 }
 
-.chips-container {
-  min-height: 38px;
-}
-
-.outcome-row {
-  min-height: 40px;
+/* A chip row without chips takes no space (e.g. typed text that matches nothing) */
+.chips-container:empty,
+.outcome-row:empty {
+  display: none;
 }
 
 /* A fade on the side(s) of a chip row with more chips to swipe to */
@@ -534,11 +532,6 @@ input[type='number']:focus {
   );
 }
 
-/* The new-outcome row takes no space unless a new name is typed */
-.new-outcome-row:empty {
-  display: none;
-}
-
 .chips-container > *,
 .outcome-row > * {
   flex: none;
@@ -549,11 +542,11 @@ input[type='number']:focus {
   background: var(--chip-bg);
   border: 1px solid var(--chip-border);
   color: var(--text);
-  padding: 8px 14px;
+  padding: 10px 16px;
   min-width: 48px;
-  min-height: 38px;
-  border-radius: 19px;
-  font-size: 0.95rem;
+  min-height: 48px;
+  border-radius: 24px;
+  font-size: 1rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -567,9 +560,11 @@ input[type='number']:focus {
 }
 
 .chip {
-  padding: 10px 14px;
+  padding: 10px 16px;
+  min-width: 48px;
+  min-height: 48px;
   border-radius: 12px;
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
   user-select: none;
