@@ -108,15 +108,6 @@ describe('loading and history list', () => {
     expect(localStorage.getItem('climb_attempts_history')).not.toBeNull();
   });
 
-  it('keeps a copy of unreadable saved data and starts empty', async () => {
-    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    const bad = JSON.stringify({ version: '1.2.0', attempts: [attempt()] });
-    await start(undefined, null, { clog: bad });
-    expect($('historyList').textContent).toContain('No attempts logged yet.');
-    expect(localStorage.getItem('clog_unreadable')).toBe(bad);
-    expect(spy).toHaveBeenCalled();
-  });
-
   it('groups consecutive entries by activity, location and day, newest first', async () => {
     await start([
       attempt({ id: 'a1', loggedAt: '2026-11-14T12:00:00Z', location: 'A', grade: 'v1' }),
@@ -153,8 +144,6 @@ describe('loading and history list', () => {
       attempt({ id: 's', outcome: 'flash' }),
       attempt({ id: 'f', outcome: 'fell', loggedAt: '2026-11-14T12:01:00Z' }),
       attempt({ id: 'k', outcome: 'learning', loggedAt: '2026-11-14T12:02:00Z' }),
-      // quirk: outcomes missing from the registry render as failures
-      attempt({ id: 'u', outcome: 'mystery', loggedAt: '2026-11-14T12:03:00Z' }),
       attempt({
         id: 'kb',
         activity: 'kilter',
@@ -167,7 +156,6 @@ describe('loading and history list', () => {
     expect(badge('s')).toContain('entry-status-green');
     expect(badge('f')).toContain('entry-status-red');
     expect(badge('k')).toContain('entry-status-gray');
-    expect(badge('u')).toContain('entry-status-red');
     expect(q('[data-entry-id="kb"] .detail-tag').textContent).toBe('Angle: 40°');
     const time = new Date('2026-11-14T12:00:00Z').toLocaleTimeString(undefined, {
       hour: '2-digit',
@@ -685,5 +673,89 @@ describe('backup menu', () => {
       expect(alertMock.mock.calls[0][0]).toMatch(/^Failed to import JSON file: /);
       expect(stored().map((a) => a.id)).toEqual(['a1']);
     });
+  });
+});
+
+describe('saved data that cannot be used', () => {
+  const valid = { version: 'clog 0.1.0', outcomes: OUTCOMES, attempts: [attempt()] };
+  const problemsShown = () => $('problemList').textContent;
+  const inProblemMode = () =>
+    !$('problemScreen').hidden && document.body.classList.contains('problem-mode');
+
+  afterEach(() => document.body.classList.remove('problem-mode'));
+
+  it('shows the problem screen instead of the app', async () => {
+    await start(undefined, null, {
+      clog: JSON.stringify({ ...valid, attempts: [attempt({ activity: 'kilterboard' })] }),
+    });
+    expect(inProblemMode()).toBe(true);
+    expect(problemsShown()).toBe('attempt #1 (id a1…): unknown activity "kilterboard"');
+    // the app is not running: its buttons do nothing
+    $('openModalBtn').click();
+    expect($('modalOverlay').classList.contains('active')).toBe(false);
+    expect(document.querySelectorAll('.entry-card')).toHaveLength(0);
+  });
+
+  it('lists every kind of problem: invalid JSON, old version, unknown outcome', async () => {
+    await start(undefined, null, { clog: '{oops' });
+    expect(problemsShown()).toMatch(/^not valid JSON/);
+    await start(undefined, null, { clog: JSON.stringify({ ...valid, version: '1.2.0' }) });
+    expect(problemsShown()).toMatch(/^version "1\.2\.0" is not a clog backup version/);
+    await start(undefined, null, {
+      clog: JSON.stringify({ ...valid, attempts: [attempt({ outcome: 'mystery' })] }),
+    });
+    expect(problemsShown()).toBe('attempt #1 (id a1…): outcome "mystery" is not defined');
+  });
+
+  it('does not show for valid or missing data', async () => {
+    await start([attempt()]);
+    expect($('problemScreen').hidden).toBe(true);
+    await start(undefined, null);
+    expect($('problemScreen').hidden).toBe(true);
+  });
+
+  it('downloads the saved data unchanged and keeps it', async () => {
+    const raw = '{oops';
+    let blob: Blob | undefined;
+    let name: string | undefined;
+    URL.createObjectURL = vi.fn((b: Blob) => {
+      blob = b;
+      return 'blob:test';
+    });
+    URL.revokeObjectURL = vi.fn();
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (
+      this: HTMLAnchorElement,
+    ) {
+      name = this.getAttribute('download') ?? undefined;
+    });
+    await start(undefined, null, { clog: raw });
+    $('downloadSavedDataBtn').click();
+    expect(name).toBe('clog_saved_data_2026-11-15.json');
+    expect(await blob!.text()).toBe(raw);
+    expect(localStorage.getItem('clog')).toBe(raw);
+    expect(inProblemMode()).toBe(true);
+  });
+
+  it('starts fresh only on the second tap, then works normally', async () => {
+    await start(undefined, null, { clog: '{oops' });
+    const button = $('startFreshBtn');
+    button.click();
+    expect(button.textContent).toBe('Tap again to delete saved data');
+    expect(localStorage.getItem('clog')).toBe('{oops');
+    expect(inProblemMode()).toBe(true);
+
+    button.click();
+    expect(inProblemMode()).toBe(false);
+    expect(localStorage.getItem('clog')).toBeNull();
+    expect($('historyList').textContent).toContain('No attempts logged yet.');
+
+    // logging works again
+    $('openModalBtn').click();
+    type('locationInput', 'Gym');
+    type('gradeInput', '6a');
+    type('customOutcomeInput', 'flash');
+    q('.cat-btn[data-cat="success"]').click();
+    $('saveCustomOutcomeBtn').click();
+    expect(stored()).toHaveLength(1);
   });
 });

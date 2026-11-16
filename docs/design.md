@@ -280,11 +280,30 @@ missing or duplicate ids, invalid timestamps, non-text field values, and require
 stored or imported data. Attempts may lack a field added to their activity later, and
 fields no longer listed for an activity are kept and exported as they are.
 
-### Saved data is migrated silently
+### Saved data: checked on load, migrated silently
 
 The app keeps its data under the single `localStorage` key `clog`, in the same shape as the
-backup. After a future schema change it is migrated automatically on load. There is no
-migration UI. This is separate from imports, which stay strict.
+backup. After a future schema change it is migrated automatically on load, with no migration
+UI.
+
+On every load the data is **checked exactly like an import**: version, and consistency with
+`config.ts`. Until migrations exist, an older version is simply one more problem. The usual
+cause would be our own mistake, e.g. removing an activity from the config that saved data
+still uses.
+
+If the check fails, the app does not start. It shows a **problem screen** with the list of
+problems and two buttons:
+
+- **Download saved data:** saves the raw data unchanged (`clog_saved_data_<date>.json`) to fix
+  at the desk. The data stays in the browser.
+- **Start fresh** (two-tap: "Tap again to delete saved data"): deletes the saved data and starts
+  the normal app empty, so logging can continue right away.
+
+So there are two ways forward: **stop** until it is fixed (fix the config and deploy, then
+reload), or **reset** and keep logging. After a reset, restoring the downloaded data later
+needs a merge with what was logged since (a future `merge` script).
+
+Bug reports (saving problems and unexpected errors for download) were discussed and postponed.
 
 ### Fixing files: scripts, not app UI
 

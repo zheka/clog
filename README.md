@@ -41,6 +41,7 @@ src/
     historyView.ts      the attempt list
     entryModal.ts       new/edit entry sheet
     menuModal.ts        backup menu
+    problemScreen.ts    shown instead of the app when saved data can't be used
     dom.ts              small DOM helpers
   style.css
   app.test.ts         UI tests: the whole app in jsdom

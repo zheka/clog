@@ -21,3 +21,31 @@ export function downloadFile(fileName: string, content: string, mimeType: string
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
 }
+
+/** How long a two-tap button waits for the confirming second tap. */
+const CONFIRM_MS = 4000;
+
+/**
+ * Two-tap confirmation inside the button itself: the first tap changes its label to
+ * `confirmLabel`; a second tap within a few seconds runs `action`, otherwise it resets.
+ */
+export function twoTapButton(button: HTMLElement, confirmLabel: string, action: () => void): void {
+  const label = button.textContent;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const reset = () => {
+    clearTimeout(timer);
+    timer = undefined;
+    button.textContent = label;
+    button.classList.remove('confirming');
+  };
+  button.addEventListener('click', () => {
+    if (timer === undefined) {
+      button.textContent = confirmLabel;
+      button.classList.add('confirming');
+      timer = setTimeout(reset, CONFIRM_MS);
+      return;
+    }
+    reset();
+    action();
+  });
+}

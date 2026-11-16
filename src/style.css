@@ -724,3 +724,61 @@ input[type='number']:focus {
 .custom-outcomes-accordion .category-selector-row {
   margin-top: 8px;
 }
+
+/* Problem mode: saved data can't be used; only the problem screen is shown */
+.problem-mode #mainContent,
+.problem-mode .fab,
+.problem-mode .menu-btn {
+  display: none;
+}
+
+.problem-screen {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 0;
+}
+
+.problem-screen h2 {
+  font-size: 1.1rem;
+}
+
+.problem-screen p {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.problem-list {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 0.78rem;
+  max-height: 40vh;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.problem-btn {
+  padding: 14px;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+}
+
+.problem-btn.danger {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--failure);
+  border: 1px solid var(--failure);
+}
+
+.problem-btn.danger.confirming {
+  background: var(--failure);
+  color: #fff;
+}
