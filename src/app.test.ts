@@ -141,6 +141,11 @@ describe('loading and history list', () => {
     expect(getComputedStyle($('historyList')).rowGap).toBe('8px');
     expect(getComputedStyle(groups[0]).borderTopStyle).toBe('solid');
     expect(getComputedStyle(q('.entry-card', groups[2])).borderTopStyle).toMatch(/^(none|)$/);
+    // header: starts with the date (no icon before it), in the normal text colour
+    expect(q('.group-header-left', groups[0]).querySelector('svg')).toBeNull();
+    expect(getComputedStyle(q('.group-header', groups[0])).color).toBe(
+      getComputedStyle(document.body).color,
+    );
     // header style: no line under it; the chevron is an outline in the text colour
     const header = getComputedStyle(q('.group-header', groups[0]));
     expect(header.borderBottomStyle).toMatch(/^(none|)$/);
@@ -207,7 +212,7 @@ describe('new entry modal', () => {
     ]);
     $('openModalBtn').click();
     expect($('modalOverlay').classList.contains('active')).toBe(true);
-    expect($('modalTitle').textContent).toBe('New Entry');
+    expect($('modalTitle').textContent).toBe('New Attempt');
     expect($('deleteBtn').style.display).toBe('none');
     expect($<HTMLInputElement>('locationInput').value).toBe('BW Ost');
     expect($<HTMLInputElement>('field-grade').value).toBe('v5');
@@ -570,7 +575,7 @@ describe('editing and deleting', () => {
   it('opens the entry for editing', async () => {
     await start(data());
     edit('a1');
-    expect($('modalTitle').textContent).toBe('Edit Entry');
+    expect($('modalTitle').textContent).toBe('Edit Attempt');
     expect($('deleteBtn').style.display).toBe('block');
     expect($<HTMLInputElement>('field-grade').value).toBe('v3');
     expect($<HTMLInputElement>('field-angle').value).toBe('40');
@@ -643,7 +648,7 @@ describe('editing and deleting', () => {
     $('deleteBtn').click();
     $('closeModalBtn').click();
     edit('a2');
-    expect($('deleteBtn').textContent).toBe('Delete Entry');
+    expect($('deleteBtn').textContent).toBe('Delete');
     $('deleteBtn').click();
     expect(stored()).toHaveLength(2);
   });

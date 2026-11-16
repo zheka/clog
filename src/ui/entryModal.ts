@@ -30,7 +30,7 @@ interface TextInput {
 }
 
 /**
- * The New/Edit Entry sheet: context (activity, location), the activity's own fields from
+ * The New/Edit Attempt sheet: context (activity, location), the activity's own fields from
  * config.ts, and the outcome. Tapping an outcome chip saves the entry immediately; typing a
  * new outcome name offers one chip per category that creates the outcome and saves.
  */
@@ -250,7 +250,7 @@ export function mountEntryModal(store: Store): EntryModal {
   /** New entry, prefilled from the previous attempt. */
   function openNew() {
     editingId = null;
-    title.textContent = 'New Entry';
+    title.textContent = 'New Attempt';
     deleteBtn.style.display = 'none';
 
     const last = lastAttempt();
@@ -271,7 +271,7 @@ export function mountEntryModal(store: Store): EntryModal {
     if (!entry) return;
 
     editingId = entry.id;
-    title.textContent = 'Edit Entry';
+    title.textContent = 'Edit Attempt';
     deleteBtn.style.display = 'block';
 
     setActivity(entry.activity);

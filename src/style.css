@@ -130,7 +130,7 @@ main {
   justify-content: space-between;
   font-size: 0.95rem;
   font-weight: 700;
-  color: var(--primary);
+  color: var(--text);
   padding: 12px 0;
   text-transform: capitalize;
   cursor: pointer;
@@ -141,13 +141,6 @@ main {
   display: flex;
   align-items: center;
   gap: 8px;
-}
-
-/* The location pin (a filled icon) */
-.group-header-left svg {
-  width: 16px;
-  height: 16px;
-  fill: currentColor;
 }
 
 /* Outline chevron in the text colour, like the one in the entry form's context bar */

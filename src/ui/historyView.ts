@@ -11,8 +11,6 @@ const BADGE_CLASS: Record<Category, string> = {
   work: 'entry-status-gray',
 };
 
-const PIN_ICON =
-  '<svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>';
 const CHEVRON_ICON =
   '<svg class="group-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"></polyline></svg>';
 
@@ -45,7 +43,6 @@ export function mountHistoryView(store: Store, onEdit: (id: string) => void): vo
     headerEl.className = 'group-header';
     headerEl.innerHTML = `
       <div class="group-header-left">
-        ${PIN_ICON}
         <span><span class="group-date">${session.dateString}</span> &bull; ${escapeHtml(session.location)} &bull; ${escapeHtml(session.activity)}</span>
       </div>
       ${CHEVRON_ICON}

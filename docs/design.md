@@ -415,7 +415,7 @@ Rules for every chip row:
   the new one doesn't are dropped (kilter → boulder drops the angle).
 - Adding and editing are **instant**: no confirmation, no undo bar (rejected as clutter; may be
   revisited).
-- **Destructive actions use a two-tap confirmation inside the button:** "Delete Entry" →
+- **Destructive actions use a two-tap confirmation inside the button:** "Delete" →
   "Tap again to delete". No dialogs, no browser `confirm()`. The same pattern is used elsewhere,
   e.g. replacing all data on import: "Replace my 118 attempts" → "Confirm replace".
 - Messages (validation errors, import results and problems) are shown **inside the form or
@@ -425,8 +425,9 @@ Rules for every chip row:
 
 - Groups **consecutive** attempts by **activity + location + local date**. There is no explicit
   session concept: boulders and the board on the same day appear as two groups.
-- The group header shows the date, location and activity (`Nov 15 • TK • route`), with no line
-  under it, and the same outline chevron as the entry form's context bar. Cards show the time, **each field the
+- The group header shows the date, location and activity (`Nov 15 • TK • route`) in the normal
+  text colour, with no icon before it and no line under it, and the same outline chevron as the
+  entry form's context bar. Cards show the time, **each field the
   activity lists as a badge** in config order, and the outcome badge in its category colour.
   No tags; fields the activity doesn't list are not shown. Decorations such as a `°` suffix
   for the angle will come from field properties.
