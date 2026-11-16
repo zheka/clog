@@ -1,51 +1,94 @@
 import { describe, expect, it } from 'vitest';
-import { matchExistingCasing, quickOutcomes, recentValues, suggestValues } from './suggestions';
+import {
+  fieldCandidates,
+  outcomeCandidates,
+  rankByQuery,
+  suggestOutcomes,
+  suggestValues,
+} from './suggestions';
 import { makeAttempt } from './test-helpers';
+import type { Outcome } from './types';
 
-const withLocations = (...locations: string[]) =>
-  locations.map((location) => makeAttempt({ location }));
+const here = { activity: 'boulder', location: 'BW Ost' };
 
-describe('recentValues', () => {
-  it('returns unique trimmed values, newest first, ignoring case', () => {
-    expect(recentValues(withLocations('A', ' b ', 'B', 'c'), 'location')).toEqual(['c', 'B', 'A']);
+describe('fieldCandidates', () => {
+  // oldest first, like stored data
+  const attempts = [
+    makeAttempt({ activity: 'route', location: 'TK', grade: '7-' }),
+    makeAttempt({ activity: 'boulder', location: 'Seoul', grade: '8' }),
+    makeAttempt({ activity: 'boulder', location: 'BW Ost', grade: '6' }),
+    makeAttempt({ activity: 'boulder', location: 'BW Ost', grade: '7' }),
+    makeAttempt({ activity: 'boulder', location: 'Seoul', grade: '6' }),
+  ];
+
+  it('orders field values: same activity + location, same activity, all; newest first', () => {
+    expect(fieldCandidates(attempts, 'grade', here)).toEqual(['7', '6', '8', '7-']);
   });
-  it('skips empty values and the excluded id', () => {
-    const attempts = withLocations('A', '  ', 'B');
-    expect(recentValues(attempts, 'location', attempts[2].id)).toEqual(['A']);
+
+  it('orders locations: same activity, then all', () => {
+    expect(fieldCandidates(attempts, 'location', here)).toEqual(['Seoul', 'BW Ost', 'TK']);
+  });
+
+  it('keeps values that differ only by case apart, and skips the excluded attempt', () => {
+    const list = [makeAttempt({ grade: '6a' }), makeAttempt({ grade: '6A' })];
+    expect(fieldCandidates(list, 'grade', here)).toEqual(['6A', '6a']);
+    expect(fieldCandidates(list, 'grade', here, list[1].id)).toEqual(['6a']);
+  });
+
+  it('ignores attempts without the field', () => {
+    expect(fieldCandidates(attempts, 'angle', here)).toEqual([]);
+  });
+});
+
+describe('rankByQuery', () => {
+  const values = ['7/6+', '6', 'six', '6+', '5'];
+
+  it('puts values starting with the text first, then containing it, then the rest', () => {
+    expect(rankByQuery(values, '6')).toEqual(['6', '6+', '7/6+', 'six', '5']);
+  });
+
+  it('ignores case and surrounding spaces, and keeps the order for no text', () => {
+    expect(rankByQuery(['BW Ost', 'Seoul'], ' bw ')).toEqual(['BW Ost', 'Seoul']);
+    expect(rankByQuery(values, '  ')).toEqual(values);
   });
 });
 
 describe('suggestValues', () => {
-  const attempts = withLocations('Gym1', 'Gym2', 'Other', 'Gym4');
-
-  it('returns the 3 most recent without a query', () => {
-    expect(suggestValues(attempts, 'location', '')).toEqual(['Gym4', 'Other', 'Gym2']);
-  });
-  it('puts matches first, then tops up with recent values', () => {
-    expect(suggestValues(attempts, 'location', 'gym1')).toEqual(['Gym1', 'Gym4', 'Other']);
-    expect(suggestValues(attempts, 'location', 'gym')).toEqual(['Gym4', 'Gym2', 'Gym1']);
-  });
-  it('respects the limit and excluded id', () => {
-    expect(suggestValues(attempts, 'location', '', attempts[3].id, 2)).toEqual(['Other', 'Gym2']);
+  it('always fills the row: matches first, then backfill, up to the limit', () => {
+    const attempts = ['5', '6', '7', '8'].map((grade) => makeAttempt({ grade }));
+    expect(suggestValues(attempts, 'grade', '', here)).toEqual(['8', '7', '6']);
+    expect(suggestValues(attempts, 'grade', '5', here)).toEqual(['5', '8', '7']);
+    expect(suggestValues(attempts, 'grade', 'x', here, null, 2)).toEqual(['8', '7']);
   });
 });
 
-describe('matchExistingCasing', () => {
-  const attempts = withLocations('BW Ost', 'Element');
-  it('returns the stored spelling for a case-insensitive match', () => {
-    expect(matchExistingCasing(attempts, 'location', '  bw ost ')).toBe('BW Ost');
-  });
-  it('returns the trimmed input when there is no match', () => {
-    expect(matchExistingCasing(attempts, 'location', ' New Gym ')).toBe('New Gym');
-    expect(matchExistingCasing(attempts, 'location', '   ')).toBe('');
-  });
-});
+describe('outcomes', () => {
+  const outcomes: Outcome[] = ['flash', 'send', 'fell', 'onsight', 'pumped'].map((name) => ({
+    name,
+    category: 'success',
+  }));
+  const attempts = [
+    makeAttempt({ activity: 'route', outcome: 'onsight' }),
+    makeAttempt({ activity: 'boulder', outcome: 'fell' }),
+    makeAttempt({ activity: 'boulder', outcome: 'flash' }),
+    makeAttempt({ activity: 'route', outcome: 'mystery' }), // not in the list
+  ];
 
-describe('quickOutcomes', () => {
-  it('lists used outcomes newest first, then unused registered ones, up to the limit', () => {
-    const attempts = ['a', 'B', 'b', 'c'].map((outcome) => makeAttempt({ outcome }));
-    const registry = ['a', 'x', 'y', 'z'].map((name) => ({ name, category: 'success' as const }));
-    expect(quickOutcomes(attempts, registry)).toEqual(['c', 'b', 'a', 'x', 'y', 'z']);
-    expect(quickOutcomes(attempts, registry, 4)).toEqual(['c', 'b', 'a', 'x']);
+  it('come from the outcome list only: this activity, then any activity, then unused', () => {
+    expect(outcomeCandidates(attempts, outcomes, 'boulder')).toEqual([
+      'flash',
+      'fell',
+      'onsight',
+      'send',
+      'pumped',
+    ]);
+  });
+
+  it('are filtered by typed text, with backfill', () => {
+    expect(suggestOutcomes(attempts, outcomes, 'boulder', 'f', 3)).toEqual([
+      'flash',
+      'fell',
+      'onsight',
+    ]);
   });
 });

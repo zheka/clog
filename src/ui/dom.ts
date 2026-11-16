@@ -28,8 +28,13 @@ const CONFIRM_MS = 4000;
 /**
  * Two-tap confirmation inside the button itself: the first tap changes its label to
  * `confirmLabel`; a second tap within a few seconds runs `action`, otherwise it resets.
+ * Returns a function that resets the button (e.g. when its sheet closes).
  */
-export function twoTapButton(button: HTMLElement, confirmLabel: string, action: () => void): void {
+export function twoTapButton(
+  button: HTMLElement,
+  confirmLabel: string,
+  action: () => void,
+): () => void {
   const label = button.textContent;
   let timer: ReturnType<typeof setTimeout> | undefined;
   const reset = () => {
@@ -48,4 +53,5 @@ export function twoTapButton(button: HTMLElement, confirmLabel: string, action: 
     reset();
     action();
   });
+  return reset;
 }

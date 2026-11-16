@@ -782,3 +782,18 @@ input[type='number']:focus {
   background: var(--failure);
   color: #fff;
 }
+
+/* Chip with the field's current value */
+.chip-small.current {
+  outline: 2px solid var(--text);
+}
+
+.activity-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.activity-fields label {
+  text-transform: capitalize;
+}

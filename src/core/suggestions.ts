@@ -1,73 +1,101 @@
 import type { Attempt, Outcome } from './types';
 
-/** A text field of an attempt: `location` or an activity field such as `grade`. */
-type TextField = string;
+/** Where the form currently is: the selected activity and the typed location. */
+export interface Scope {
+  activity: string;
+  location: string;
+}
 
-const sameText = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
+type Pool = (a: Attempt) => boolean;
 
-/** Unique values of a field, most recent first (case-insensitive, trimmed). */
-export function recentValues(
-  attempts: Attempt[],
-  field: TextField,
-  excludeId: string | null = null,
-): string[] {
-  const recent: string[] = [];
-  for (let i = attempts.length - 1; i >= 0; i--) {
-    if (excludeId && attempts[i].id === excludeId) continue;
-    const val = attempts[i][field];
-    if (val && typeof val === 'string') {
-      const trimmed = val.trim();
-      if (trimmed.length > 0 && !recent.some((r) => sameText(r, trimmed))) {
-        recent.push(trimmed);
-      }
+/** Distinct values (exact, case kept) of a field, pool by pool, most recent first in each. */
+function collect(attempts: Attempt[], field: string, pools: Pool[], excludeId: string | null) {
+  const values: string[] = [];
+  const seen = new Set<string>();
+  for (const inPool of pools) {
+    for (let i = attempts.length - 1; i >= 0; i--) {
+      const a = attempts[i];
+      if (excludeId && a.id === excludeId) continue;
+      const value = a[field];
+      if (!value || seen.has(value) || !inPool(a)) continue;
+      seen.add(value);
+      values.push(value);
     }
   }
-  return recent;
+  return values;
 }
 
 /**
- * Up to `limit` suggestions for a field: recent values containing the query first,
- * then topped up with the most recent values regardless of the query.
+ * Candidate values for a text field, in priority order:
+ * - `location`: same activity, then all activities;
+ * - activity fields: same activity + location, then same activity, then all activities.
  */
+export function fieldCandidates(
+  attempts: Attempt[],
+  field: string,
+  scope: Scope,
+  excludeId: string | null = null,
+): string[] {
+  const sameActivity: Pool = (a) => a.activity === scope.activity;
+  const pools: Pool[] =
+    field === 'location'
+      ? [sameActivity, () => true]
+      : [(a) => sameActivity(a) && a.location === scope.location, sameActivity, () => true];
+  return collect(attempts, field, pools, excludeId);
+}
+
+/**
+ * Orders values for typed text, ignoring case: values starting with it, then values containing
+ * it, then the rest (backfill). Otherwise keeps the given order. No text keeps the order as is.
+ */
+export function rankByQuery(values: string[], query: string): string[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return values;
+  const starts: string[] = [];
+  const contains: string[] = [];
+  const rest: string[] = [];
+  for (const v of values) {
+    const lower = v.toLowerCase();
+    if (lower.startsWith(q)) starts.push(v);
+    else if (lower.includes(q)) contains.push(v);
+    else rest.push(v);
+  }
+  return [...starts, ...contains, ...rest];
+}
+
 export function suggestValues(
   attempts: Attempt[],
-  field: TextField,
+  field: string,
   query: string,
+  scope: Scope,
   excludeId: string | null = null,
   limit = 3,
 ): string[] {
-  const q = query.trim().toLowerCase();
-  const recent = recentValues(attempts, field, excludeId);
-  const results = recent.filter((v) => q === '' || v.toLowerCase().includes(q));
-  for (const item of recent) {
-    if (results.length >= limit) break;
-    if (!results.some((r) => sameText(r, item))) results.push(item);
-  }
-  return results.slice(0, limit);
+  return rankByQuery(fieldCandidates(attempts, field, scope, excludeId), query).slice(0, limit);
 }
 
-/** If the typed value matches an earlier one ignoring case, returns the earlier spelling. */
-export function matchExistingCasing(attempts: Attempt[], field: TextField, typed: string): string {
-  const trimmed = typed.trim();
-  if (!trimmed) return '';
-  for (let i = attempts.length - 1; i >= 0; i--) {
-    const val = attempts[i][field];
-    if (val && typeof val === 'string' && sameText(val.trim(), trimmed)) {
-      return val.trim();
-    }
-  }
-  return trimmed;
+/**
+ * Outcome names for the chips, only from the outcome list: used with this activity (most
+ * recent first), then used with any activity, then never used (in list order).
+ */
+export function outcomeCandidates(
+  attempts: Attempt[],
+  outcomes: Outcome[],
+  activity: string,
+): string[] {
+  const defined = new Set(outcomes.map((o) => o.name));
+  const used = collect(attempts, 'outcome', [(a) => a.activity === activity, () => true], null);
+  const list = used.filter((name) => defined.has(name));
+  for (const o of outcomes) if (!list.includes(o.name)) list.push(o.name);
+  return list;
 }
 
-/** Outcome names for the quick-pick chips: most recently used first, then unused registered ones. */
-export function quickOutcomes(attempts: Attempt[], outcomes: Outcome[], limit = 8): string[] {
-  const list: string[] = [];
-  for (let i = attempts.length - 1; i >= 0; i--) {
-    const out = attempts[i].outcome;
-    if (out && !list.some((r) => sameText(r, out))) list.push(out);
-  }
-  for (const o of outcomes) {
-    if (!list.some((r) => sameText(r, o.name))) list.push(o.name);
-  }
-  return list.slice(0, limit);
+export function suggestOutcomes(
+  attempts: Attempt[],
+  outcomes: Outcome[],
+  activity: string,
+  query: string,
+  limit = 8,
+): string[] {
+  return rankByQuery(outcomeCandidates(attempts, outcomes, activity), query).slice(0, limit);
 }

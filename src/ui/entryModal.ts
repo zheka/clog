@@ -1,26 +1,38 @@
 import { config, findActivity } from '../config';
-import { getCategory, sortByName } from '../core/outcomes';
-import { matchExistingCasing, quickOutcomes, suggestValues } from '../core/suggestions';
+import { getCategory } from '../core/outcomes';
+import { suggestOutcomes, suggestValues, type Scope } from '../core/suggestions';
 import { cleanText, normalizeName } from '../core/text';
-import type { Category } from '../core/types';
+import type { Attempt, Category } from '../core/types';
 import type { Store } from '../store';
-import { byId } from './dom';
+import { byId, twoTapButton } from './dom';
 
 /** Within this time since the last attempt, a new entry starts with the context collapsed. */
 const SAME_SESSION_MS = config.sameSessionHours * 60 * 60 * 1000;
+const FIELD_CHIPS = 3;
+const OUTCOME_CHIPS = 8;
 
 export interface EntryModal {
   openNew(): void;
   openEdit(id: string): void;
 }
 
+/** A text input with its chip row. Chips filter only by text the user typed, not a prefill. */
+interface TextInput {
+  field: string;
+  input: HTMLInputElement;
+  chips: HTMLElement;
+  typed: boolean;
+}
+
 /**
- * The New/Edit Entry sheet. Picking an outcome saves the entry immediately;
+ * The New/Edit Entry sheet: context (activity, location), the activity's own fields from
+ * config.ts, and the outcome. Picking an outcome saves the entry immediately;
  * "Save & Log" registers a custom outcome first.
  */
 export function mountEntryModal(store: Store): EntryModal {
   let editingId: string | null = null;
   let selectedActivity = config.activities[0].name;
+  let currentOutcome: string | null = null;
   let selectedCustomCategory: Category | null = null;
 
   const overlay = byId('modalOverlay');
@@ -31,55 +43,95 @@ export function mountEntryModal(store: Store): EntryModal {
   const contextBody = byId('contextBody');
   const contextSummary = byId('contextSummaryText');
   const contextToggle = byId('contextToggleLink');
+  const fieldsContainer = byId('activityFields');
+  const outcomeChips = byId('frequentOutcomesRow');
 
-  const activityPicker = byId('activityPicker');
+  const customInput = byId<HTMLInputElement>('customOutcomeInput');
+  const categoryRow = byId('categorySelectorRow');
+  const categoryBtns = document.querySelectorAll<HTMLElement>('.cat-btn');
+  const saveCustomBtn = byId('saveCustomOutcomeBtn');
+
+  const location: TextInput = {
+    field: 'location',
+    input: byId<HTMLInputElement>('locationInput'),
+    chips: byId('locationChips'),
+    typed: false,
+  };
+  /** Inputs of the selected activity's fields, in config order. */
+  let fieldInputs: TextInput[] = [];
+
   const activityTabs = config.activities.map((activity) => {
     const tab = document.createElement('button');
     tab.type = 'button';
     tab.className = 'activity-tab';
     tab.dataset.activity = activity.name;
     tab.textContent = activity.name;
-    tab.addEventListener('click', () => setActivity(activity.name));
-    activityPicker.appendChild(tab);
+    tab.addEventListener('click', () => switchActivity(activity.name));
+    byId('activityPicker').appendChild(tab);
     return tab;
   });
-  const angleGroup = byId('boardAngleGroup');
-  const angleInput = byId<HTMLInputElement>('boardAngleInput');
-  const angleChips = document.querySelectorAll<HTMLElement>('#angleChips .chip-small');
 
-  const locationInput = byId<HTMLInputElement>('locationInput');
-  const gradeInput = byId<HTMLInputElement>('gradeInput');
-  const locationChips = byId('locationChips');
-  const gradeChips = byId('gradeChips');
-  const outcomeChips = byId('frequentOutcomesRow');
+  // --- helpers ---------------------------------------------------------------
 
-  const customInput = byId<HTMLInputElement>('customOutcomeInput');
-  const outcomesDatalist = byId('outcomes-list');
-  const categoryRow = byId('categorySelectorRow');
-  const categoryBtns = document.querySelectorAll<HTMLElement>('.cat-btn');
-  const saveCustomBtn = byId('saveCustomOutcomeBtn');
+  const attempts = () => store.getState().attempts;
+  const lastAttempt = (activity?: string): Attempt | null => {
+    const list = attempts();
+    for (let i = list.length - 1; i >= 0; i--) {
+      if (!activity || list[i].activity === activity) return list[i];
+    }
+    return null;
+  };
+  const scope = (): Scope => ({
+    activity: selectedActivity,
+    location: cleanText(location.input.value),
+  });
 
-  // --- rendering -----------------------------------------------------------
+  function setValue(text: TextInput, value: string) {
+    text.input.value = value;
+    text.typed = false;
+  }
 
+  // --- rendering -------------------------------------------------------------
+
+  /** Shows the activity's tabs state and builds its field inputs (empty). */
   function setActivity(name: string) {
     selectedActivity = name;
     activityTabs.forEach((tab) => tab.classList.toggle('active', tab.dataset.activity === name));
-    if (hasField('angle')) {
-      angleGroup.style.display = 'flex';
-    } else {
-      angleGroup.style.display = 'none';
-      angleInput.value = '';
-    }
+    fieldsContainer.innerHTML = '';
+    fieldInputs = (findActivity(name)?.fields ?? []).map((field) => {
+      const group = document.createElement('div');
+      group.className = 'form-group';
+      const label = document.createElement('label');
+      label.htmlFor = `field-${field}`;
+      label.textContent = field;
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.id = `field-${field}`;
+      input.autocomplete = 'off';
+      const chips = document.createElement('div');
+      chips.className = 'chips-container';
+      chips.id = `chips-${field}`;
+      group.append(label, input, chips);
+      fieldsContainer.appendChild(group);
+      const text: TextInput = { field, input, chips, typed: false };
+      input.addEventListener('input', () => {
+        text.typed = true;
+        renderChips(text);
+      });
+      return text;
+    });
     updateContextSummary();
   }
 
-  function hasField(field: string) {
-    return findActivity(selectedActivity)?.fields.includes(field) ?? false;
+  /** Fills location and fields from an attempt (missing values stay empty). */
+  function fill(from: Attempt | null, keepLocation = false) {
+    if (!keepLocation) setValue(location, from?.location ?? '');
+    for (const text of fieldInputs) setValue(text, from?.[text.field] ?? '');
   }
 
   function updateContextSummary() {
-    const location = locationInput.value.trim() || 'Unknown Location';
-    contextSummary.textContent = `${location} • ${selectedActivity}`;
+    const loc = location.input.value.trim() || 'Unknown Location';
+    contextSummary.textContent = `${loc} • ${selectedActivity}`;
   }
 
   function setContextExpanded(expanded: boolean) {
@@ -87,54 +139,65 @@ export function mountEntryModal(store: Store): EntryModal {
     contextToggle.textContent = expanded ? 'Hide' : 'Change';
   }
 
-  function renderSuggestions(field: 'location' | 'grade') {
-    const input = field === 'location' ? locationInput : gradeInput;
-    const container = field === 'location' ? locationChips : gradeChips;
-    const { attempts } = store.getState();
-    container.innerHTML = '';
-    for (const text of suggestValues(attempts, field, input.value, editingId)) {
+  function renderChips(text: TextInput) {
+    const query = text.typed ? text.input.value : '';
+    const values = suggestValues(attempts(), text.field, query, scope(), editingId, FIELD_CHIPS);
+    text.chips.innerHTML = '';
+    for (const value of values) {
       const chip = document.createElement('span');
       chip.className = 'chip-small';
-      chip.textContent = text;
+      chip.classList.toggle('current', value === text.input.value);
+      chip.textContent = value;
       chip.addEventListener('click', () => {
-        input.value = text;
-        renderSuggestions(field);
-        updateContextSummary();
+        setValue(text, value);
+        if (text === location) {
+          updateContextSummary();
+          renderAllChips();
+        } else {
+          renderChips(text);
+        }
       });
-      container.appendChild(chip);
+      text.chips.appendChild(chip);
     }
   }
 
   function renderOutcomeChips() {
-    const { attempts, outcomes } = store.getState();
-    const lastOutcome = attempts.length > 0 ? attempts[attempts.length - 1].outcome : null;
+    const { outcomes } = store.getState();
+    const query = normalizeName(customInput.value);
     outcomeChips.innerHTML = '';
-    for (const outcome of quickOutcomes(attempts, outcomes)) {
+    for (const outcome of suggestOutcomes(
+      attempts(),
+      outcomes,
+      selectedActivity,
+      query,
+      OUTCOME_CHIPS,
+    )) {
       const chip = document.createElement('span');
       chip.className = `chip ${getCategory(outcomes, outcome)}`;
-      // Highlight the most recently used outcome
-      if (lastOutcome && lastOutcome.toLowerCase() === outcome.toLowerCase()) {
-        chip.style.outline = '2px solid var(--text)';
-      }
+      // Highlight the field's current value
+      if (outcome === currentOutcome) chip.style.outline = '2px solid var(--text)';
       chip.textContent = outcome;
       chip.addEventListener('click', () => logAttempt(outcome));
       outcomeChips.appendChild(chip);
     }
   }
 
-  function renderOutcomesDatalist() {
-    outcomesDatalist.innerHTML = '';
-    for (const o of sortByName(store.getState().outcomes)) {
-      const option = document.createElement('option');
-      option.value = o.name;
-      outcomesDatalist.appendChild(option);
-    }
+  function renderAllChips() {
+    renderChips(location);
+    fieldInputs.forEach(renderChips);
   }
 
-  function resetCustomOutcome() {
-    customInput.value = '';
-    categoryRow.style.display = 'none';
-    selectCategory(null);
+  /** The category buttons appear for a new name only; an existing one is picked from the chips. */
+  function updateCustomOutcome() {
+    const name = normalizeName(customInput.value);
+    const exists = store.getState().outcomes.some((o) => o.name === name);
+    if (name && !exists) {
+      categoryRow.style.display = 'flex';
+    } else {
+      categoryRow.style.display = 'none';
+      selectCategory(null);
+    }
+    renderOutcomeChips();
   }
 
   function selectCategory(category: Category | null) {
@@ -146,47 +209,42 @@ export function mountEntryModal(store: Store): EntryModal {
   }
 
   function show() {
+    customInput.value = '';
+    updateCustomOutcome();
     updateContextSummary();
-    renderSuggestions('location');
-    renderSuggestions('grade');
-    renderOutcomeChips();
-    renderOutcomesDatalist();
-    resetCustomOutcome();
+    renderAllChips();
     overlay.classList.add('active');
   }
 
   function close() {
     overlay.classList.remove('active');
     editingId = null;
+    resetDelete();
   }
 
-  // --- open ----------------------------------------------------------------
+  // --- open ------------------------------------------------------------------
 
-  /** New entry, prefilled from the last one (same activity, gym, grade and angle). */
+  /** New entry, prefilled from the previous attempt. */
   function openNew() {
     editingId = null;
     title.textContent = 'New Entry';
     deleteBtn.style.display = 'none';
 
-    const { attempts } = store.getState();
-    const last = attempts.length > 0 ? attempts[attempts.length - 1] : null;
+    const last = lastAttempt();
     setActivity(last && findActivity(last.activity) ? last.activity : config.activities[0].name);
-    locationInput.value = last ? last.location || '' : '';
-    gradeInput.value = last ? last.grade || '' : '';
-    angleInput.value = last && hasField('angle') ? last.angle || '' : '';
+    fill(last);
+    currentOutcome = last?.outcome ?? null;
 
     // Collapse the context (activity, location) while still in the same session.
     const sameSession =
-      last !== null &&
-      Boolean(last.loggedAt) &&
-      Date.now() - new Date(last.loggedAt).getTime() < SAME_SESSION_MS;
+      last !== null && Date.now() - new Date(last.loggedAt).getTime() < SAME_SESSION_MS;
     setContextExpanded(!sameSession);
 
     show();
   }
 
   function openEdit(id: string) {
-    const entry = store.getState().attempts.find((a) => a.id === id);
+    const entry = attempts().find((a) => a.id === id);
     if (!entry) return;
 
     editingId = entry.id;
@@ -194,29 +252,47 @@ export function mountEntryModal(store: Store): EntryModal {
     deleteBtn.style.display = 'block';
 
     setActivity(entry.activity);
-    locationInput.value = entry.location || '';
-    gradeInput.value = entry.grade || '';
-    angleInput.value = hasField('angle') ? entry.angle || '' : '';
+    fill(entry);
+    currentOutcome = entry.outcome;
     setContextExpanded(false);
 
     show();
   }
 
-  // --- save ----------------------------------------------------------------
+  /**
+   * Switching activity: a new entry loads that activity's previous attempt (location and
+   * fields); when editing, or with no previous attempt, the location and the values of fields
+   * both activities have are kept.
+   */
+  function switchActivity(name: string) {
+    const kept = Object.fromEntries(fieldInputs.map((t) => [t.field, t.input.value]));
+    setActivity(name);
+    const previous = editingId ? null : lastAttempt(name);
+    if (previous) {
+      fill(previous);
+      currentOutcome = previous.outcome;
+    } else {
+      for (const text of fieldInputs) setValue(text, kept[text.field] ?? '');
+    }
+    updateContextSummary();
+    renderAllChips();
+    renderOutcomeChips();
+  }
+
+  // --- save ------------------------------------------------------------------
 
   function logAttempt(outcome: string) {
-    const { attempts } = store.getState();
-    const location = matchExistingCasing(attempts, 'location', cleanText(locationInput.value));
-    const grade = matchExistingCasing(attempts, 'grade', cleanText(gradeInput.value));
-    if (!location || !grade) {
-      alert('Please fill in both Location and Grade before selecting an outcome.');
+    const loc = cleanText(location.input.value);
+    const fields = Object.fromEntries(fieldInputs.map((t) => [t.field, cleanText(t.input.value)]));
+    const missing = [
+      loc ? null : 'location',
+      ...fieldInputs.map((t) => (fields[t.field] ? null : t.field)),
+    ].filter(Boolean);
+    if (missing.length > 0) {
+      alert(`Please fill in ${missing.join(', ')} before selecting an outcome.`);
       return;
     }
-
-    const fields: Record<string, string> = { grade };
-    if (hasField('angle')) fields.angle = cleanText(angleInput.value);
-
-    const input = { activity: selectedActivity, location, outcome, fields };
+    const input = { activity: selectedActivity, location: loc, outcome, fields };
     if (editingId) {
       store.updateAttempt(editingId, input);
     } else {
@@ -231,6 +307,8 @@ export function mountEntryModal(store: Store): EntryModal {
       alert('Please enter an outcome name.');
       return;
     }
+    // An existing outcome is logged from its chip, not saved again.
+    if (store.getState().outcomes.some((o) => o.name === name)) return;
     if (!selectedCustomCategory) {
       alert('Please select whether this outcome is a Success, Failure, or Work.');
       return;
@@ -246,46 +324,33 @@ export function mountEntryModal(store: Store): EntryModal {
     close();
   }
 
-  // --- events --------------------------------------------------------------
+  // --- events ----------------------------------------------------------------
 
   byId('openModalBtn').addEventListener('click', openNew);
   byId('closeModalBtn').addEventListener('click', close);
   overlay.addEventListener('click', (e) => {
     if (e.target === overlay) close();
   });
-  deleteBtn.addEventListener('click', deleteEntry);
+  const resetDelete = twoTapButton(deleteBtn, 'Tap again to delete', deleteEntry);
 
   contextHeader.addEventListener('click', () => {
     setContextExpanded(contextBody.classList.contains('hidden'));
   });
-  angleChips.forEach((chip) =>
-    chip.addEventListener('click', () => (angleInput.value = chip.dataset.angle ?? '')),
-  );
-  locationInput.addEventListener('input', () => {
-    renderSuggestions('location');
+  location.input.addEventListener('input', () => {
+    location.typed = true;
     updateContextSummary();
+    renderAllChips();
   });
-  gradeInput.addEventListener('input', () => renderSuggestions('grade'));
 
-  customInput.addEventListener('input', () => {
-    if (customInput.value.trim().length > 0) {
-      categoryRow.style.display = 'flex';
-    } else {
-      categoryRow.style.display = 'none';
-      selectCategory(null);
-    }
-  });
+  customInput.addEventListener('input', updateCustomOutcome);
   categoryBtns.forEach((btn) =>
     btn.addEventListener('click', () => selectCategory(btn.dataset.cat as Category)),
   );
   saveCustomBtn.addEventListener('click', saveCustomOutcome);
 
-  // Keep outcome chips and the custom-outcome hints current while the sheet is open.
+  // Keep outcome chips current while the sheet is open.
   store.subscribe((state, prev) => {
-    if (state.outcomes !== prev.outcomes) {
-      renderOutcomesDatalist();
-      renderOutcomeChips();
-    }
+    if (state.outcomes !== prev.outcomes) renderOutcomeChips();
   });
 
   return { openNew, openEdit };

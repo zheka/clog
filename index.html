@@ -88,36 +88,17 @@
           </div>
 
           <form id="entryForm">
-            <!-- Collapsible Location & Kind Context Section -->
+            <!-- Collapsible context: activity and location -->
             <div class="form-group">
               <label>Context</label>
               <div id="contextHeader" class="context-accordion-header">
-                <span id="contextSummaryText" class="context-summary"
-                  >BW Ost &bull; bouldering</span
-                >
+                <span id="contextSummaryText" class="context-summary"></span>
                 <span id="contextToggleLink" class="context-toggle-link">Change</span>
               </div>
               <div id="contextBody" class="context-collapsible-body hidden">
                 <div class="form-group">
                   <label>Activity</label>
                   <div class="activity-picker" id="activityPicker"></div>
-                </div>
-
-                <div class="form-group" id="boardAngleGroup" style="display: none">
-                  <label for="boardAngleInput">Board Angle (&deg;)</label>
-                  <input
-                    type="number"
-                    id="boardAngleInput"
-                    placeholder="e.g. 40"
-                    min="0"
-                    max="70"
-                  />
-                  <div id="angleChips" class="chips-container">
-                    <span class="chip-small" data-angle="30">30&deg;</span>
-                    <span class="chip-small" data-angle="40">40&deg;</span>
-                    <span class="chip-small" data-angle="45">45&deg;</span>
-                    <span class="chip-small" data-angle="50">50&deg;</span>
-                  </div>
                 </div>
 
                 <div class="form-group">
@@ -133,17 +114,8 @@
               </div>
             </div>
 
-            <div class="form-group">
-              <label for="gradeInput">Grade</label>
-              <input
-                type="text"
-                id="gradeInput"
-                placeholder="e.g. v5, 6, 7"
-                autocomplete="off"
-                required
-              />
-              <div id="gradeChips" class="chips-container"></div>
-            </div>
+            <!-- The selected activity's own fields (from config.ts), rendered by the app -->
+            <div id="activityFields" class="activity-fields"></div>
 
             <!-- Outcome Section: Top Frequent Chips -->
             <div class="form-group">
@@ -166,9 +138,7 @@
                       id="customOutcomeInput"
                       placeholder="e.g. sloppy heel hook"
                       autocomplete="off"
-                      list="outcomes-list"
                     />
-                    <datalist id="outcomes-list"></datalist>
                   </div>
                   <div class="category-selector-row" id="categorySelectorRow" style="display: none">
                     <button type="button" class="cat-btn" data-cat="success">🟢 Success</button>

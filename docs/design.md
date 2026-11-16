@@ -3,8 +3,8 @@
 Decisions for the next iterations of Clog: fixing UI quirks and the new data model
 (backup format `clog 0.1.0`).
 
-Status (2026-11-16): agreed. Step 1 of the implementation plan (the data schema) is done; the
-rest describes where the app is going. Where the app differs from this document, the code and
+Status (2026-11-16): agreed. Steps 1 and 2 of the implementation plan are done; the rest
+describes where the app is going. Where the app differs from this document, the code and
 its tests describe the current behaviour.
 
 ## Goals and principles
@@ -349,8 +349,9 @@ be deleted once every device has switched over.
 
 - A new attempt is **prefilled from the previous attempt** for every field (the same or a
   similar problem is often climbed many times in a row).
-- Switching activity in the form loads the previous attempt **of that activity** (assumed; to
-  confirm).
+- **Switching activity** in a new entry loads the previous attempt **of that activity** (location
+  and fields). With no previous attempt of that activity, or when editing, the location and the
+  values of fields both activities have are kept.
 - The context section (activity, location) is **collapsed** when the previous attempt is recent
   (`sameSessionHours`), and expanded for the first entry of a session.
 
@@ -363,8 +364,18 @@ Two standard input patterns:
 
 Rules for every chip row:
 
-- Chips are the **most recent values that match the typed text**; with no text, simply the
-  most recent values.
+- **Candidates come in pools**, most recent first within each, each distinct value (exact,
+  case kept) once:
+
+  | Chip row        | Pool 1                   | Pool 2         | Pool 3         |
+  | --------------- | ------------------------ | -------------- | -------------- |
+  | activity fields | same activity + location | same activity  | all activities |
+  | location        | same activity            | all activities | –              |
+  | outcome         | used with this activity  | used with any  | never used     |
+
+- **Typed text ranks them:** values starting with it first, then values containing it (both
+  ignoring case), then the rest as **backfill**, so a row is never empty while there is any
+  history. With no text the pool order is kept. All chips look the same.
 - A **prefilled value does not filter** the chips; only text the user types does.
 - The **highlighted chip is the field's current value**: for a new attempt the previous
   attempt's value, when editing the entry's own value.
@@ -377,17 +388,23 @@ Rules for every chip row:
 ### Outcomes
 
 - Tapping an outcome chip **saves the attempt immediately**.
-- Typing in the custom-outcome field **filters the outcome chip row**. If an existing outcome
-  has the same normalised name, saving a new one is disabled: tap the chip instead.
+- Outcome chips come **from the outcome list only**; history decides their order.
+- Typing in the custom-outcome field **filters the outcome chip row** (it replaces the
+  browser's suggestion list). If an existing outcome has the same normalised name, the
+  category buttons are hidden and saving is disabled: tap the chip instead.
 - A new outcome requires choosing a category (buttons for the fixed categories).
 
 ### Saving, deleting, messages
 
-- **All fields are required** when saving; usually they are already prefilled.
+- **All fields are required** when saving (location and every activity field); usually they
+  are already prefilled. For now the browser `alert` names the missing fields.
+- **Editing keeps fields the form doesn't show:** a field defined in `config.fields` but not
+  listed for the attempt's activity is kept as it is. Fields the previous activity listed and
+  the new one doesn't are dropped (kilter → boulder drops the angle).
 - Adding and editing are **instant**: no confirmation, no undo bar (rejected as clutter; may be
   revisited).
-- **Destructive actions use a two-tap confirmation inside the button:** "Delete" →
-  "Confirm delete". No dialogs, no browser `confirm()`. The same pattern is used elsewhere,
+- **Destructive actions use a two-tap confirmation inside the button:** "Delete Entry" →
+  "Tap again to delete". No dialogs, no browser `confirm()`. The same pattern is used elsewhere,
   e.g. replacing all data on import: "Replace my 118 attempts" → "Confirm replace".
 - Messages (validation errors, import results and problems) are shown **inside the form or
   menu**, not with browser `alert()`.
@@ -396,26 +413,28 @@ Rules for every chip row:
 
 - Groups **consecutive** attempts by **activity + location + local date**. There is no explicit
   session concept: boulders and the board on the same day appear as two groups.
-- The group header shows activity, location, and date. Cards show time, the activity fields,
-  and the outcome badge in its category colour.
+- The group header shows activity, location, and date. Cards show the time, **each field the
+  activity lists as a badge** in config order, and the outcome badge in its category colour.
+  No tags; fields the activity doesn't list are not shown. Decorations such as a `°` suffix
+  for the angle will come from field properties.
 - Only the newest group starts expanded.
-- An outcome missing from the outcome list (should not happen with strict import) is shown in
-  a neutral fallback style, not as a failure.
+- Unknown outcomes can't appear: imports and saved data are checked, and the form only offers
+  outcomes from the list.
 
 ## UI quirks: decisions
 
-| Quirk (current app)                           | Decision                                                         |
-| --------------------------------------------- | ---------------------------------------------------------------- |
-| Fresh install has no outcomes                 | Keep. Outcomes come from the form or a backup                    |
-| Unknown outcomes shown red (as failures)      | Strict import prevents them; neutral fallback style otherwise    |
-| Editing highlights the most recent outcome    | Highlighted chip = the field's current value                     |
-| Delete without confirmation                   | Two-tap confirm in the button                                    |
-| Tapping an outcome saves immediately          | Keep: logging must be one tap                                    |
-| Interleaving activities splits history groups | Keep: intended                                                   |
-| Outcome capitalisation inconsistent           | Normalised outcome names                                         |
-| Entry time cannot be edited                   | Low priority; only if very unobtrusive                           |
-| Import replaces everything                    | Keep: backups are restored as a whole; merging is a job for sync |
-| Browser `alert()` / `confirm()` popups        | Inline messages and two-tap confirmations                        |
+| Quirk (current app)                           | Decision                                                                                      |
+| --------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| Fresh install has no outcomes                 | Keep. Outcomes come from the form or a backup                                                 |
+| Unknown outcomes shown red (as failures)      | Can no longer occur: imports and saved data are checked; the form offers only listed outcomes |
+| Editing highlights the most recent outcome    | Highlighted chip = the field's current value                                                  |
+| Delete without confirmation                   | Two-tap confirm in the button                                                                 |
+| Tapping an outcome saves immediately          | Keep: logging must be one tap                                                                 |
+| Interleaving activities splits history groups | Keep: intended                                                                                |
+| Outcome capitalisation inconsistent           | Normalised outcome names                                                                      |
+| Entry time cannot be edited                   | Low priority; only if very unobtrusive                                                        |
+| Import replaces everything                    | Keep: backups are restored as a whole; merging is a job for sync                              |
+| Browser `alert()` / `confirm()` popups        | Inline messages and two-tap confirmations                                                     |
 
 ## Later
 
@@ -441,10 +460,14 @@ Rules for every chip row:
    cleanup, and strict import (problems are listed in the existing alert for now). The single
    existing backup was converted by a one-off script outside the repo, so a `convert-legacy`
    script is no longer needed.
-2. The `npm run backup` scripts (`check`, `upgrade`, `rename-outcome`).
-3. The generic form: context, activity fields and outcome, chip rules, required fields, inline
-   messages.
-4. The remaining quirk fixes: two-tap delete and import confirmation, highlight, fallback style.
+2. **Done (round 1):** the problem screen for unusable saved data; the generic form (activity
+   fields from the config, chip pools with backfill, cleaning without case changes, required
+   fields, outcome chips from the list with current-value highlight and filtering, switching
+   activity, keeping unlisted fields on edit); badge-only cards; two-tap delete.
+3. **Round 2, after a UX discussion:** layout and chip counts, field properties, messages inside
+   the form instead of `alert`/`confirm`, two-tap import confirmation.
+4. **Later:** the `npm run backup` scripts (`check`, `upgrade`, `rename-outcome`, `merge`), bug
+   reports, PWA, CSV export, Google Sheets sync.
 
 Each step keeps the current safety net: behaviour changes update the UI tests that pin the
 old behaviour.

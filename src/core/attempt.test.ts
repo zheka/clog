@@ -60,6 +60,25 @@ describe('createAttempt / withChanges', () => {
   });
 });
 
+describe('withChanges: fields the previous activity did not list', () => {
+  const input: AttemptInput = {
+    activity: 'route',
+    location: 'TK',
+    outcome: 'send',
+    fields: { grade: '7' },
+  };
+
+  it('keeps them (still defined in the config, just not listed)', () => {
+    const a = makeAttempt({ activity: 'boulder', angle: '30' }); // boulder doesn't list angle
+    expect(withChanges(a, input).angle).toBe('30');
+  });
+
+  it('drops fields the previous activity listed when the new one does not', () => {
+    const a = makeAttempt({ activity: 'kilter', angle: '30' });
+    expect(withChanges(a, input)).not.toHaveProperty('angle');
+  });
+});
+
 describe('sortByTime', () => {
   it('sorts oldest first without mutating the input', () => {
     const [a, b] = [makeAttempt(), makeAttempt()];

@@ -1,4 +1,5 @@
-import type { Attempt } from './types';
+import { config, findActivity, type AppConfig } from '../config';
+import { FIXED_KEYS, type Attempt } from './types';
 
 export function generateId(): string {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -21,10 +22,17 @@ export function createAttempt(input: AttemptInput, now = new Date()): Attempt {
 }
 
 /**
- * The attempt with the form's values applied; id and time unchanged. Activity fields are
- * replaced by the form's, so switching activity drops fields the new activity doesn't have.
+ * The attempt with the form's values applied; id and time unchanged.
+ * The form's activity fields replace those of the attempt's previous activity, so switching
+ * from kilter to boulder drops the angle. Fields the previous activity didn't list (still
+ * defined in the config, e.g. after a field was taken off an activity) are kept as they are.
  */
-export function withChanges(attempt: Attempt, input: AttemptInput): Attempt {
+export function withChanges(
+  attempt: Attempt,
+  input: AttemptInput,
+  cfg: AppConfig = config,
+): Attempt {
+  const previousFields = new Set(findActivity(attempt.activity, cfg)?.fields ?? []);
   // Key order as in the design: context, activity fields, outcome.
   const updated: Record<string, string> = {
     id: attempt.id,
@@ -32,6 +40,10 @@ export function withChanges(attempt: Attempt, input: AttemptInput): Attempt {
     activity: input.activity,
     location: input.location,
   };
+  for (const [field, value] of Object.entries(attempt)) {
+    const fixed = (FIXED_KEYS as readonly string[]).includes(field);
+    if (!fixed && !previousFields.has(field) && !(field in input.fields)) updated[field] = value;
+  }
   for (const [field, value] of Object.entries(input.fields)) {
     if (value !== '') updated[field] = value;
   }

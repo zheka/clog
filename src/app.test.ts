@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 /**
  * Characterization tests for the whole app: load index.html + main.ts in jsdom and drive the UI.
- * They pin down CURRENT behaviour (quirks included) so refactors can't change it unnoticed.
+ * They pin down current behaviour so refactors can't change it unnoticed.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import indexHtml from '../index.html?raw';
@@ -139,7 +139,7 @@ describe('loading and history list', () => {
     expect(groups[1].classList.contains('collapsed')).toBe(false);
   });
 
-  it('renders time, grade, outcome badge colour by category and board angle', async () => {
+  it('renders time, activity fields as badges, and outcome badge colour by category', async () => {
     await start([
       attempt({ id: 's', outcome: 'flash' }),
       attempt({ id: 'f', outcome: 'fell', loggedAt: '2026-11-14T12:01:00Z' }),
@@ -156,7 +156,9 @@ describe('loading and history list', () => {
     expect(badge('s')).toContain('entry-status-green');
     expect(badge('f')).toContain('entry-status-red');
     expect(badge('k')).toContain('entry-status-gray');
-    expect(q('[data-entry-id="kb"] .detail-tag').textContent).toBe('Angle: 40°');
+    // every field the activity lists, as a badge in config order; no tags
+    expect(texts('[data-entry-id="kb"] .grade-badge')).toEqual(['40', 'v4']);
+    expect(document.querySelector('.detail-tag')).toBeNull();
     const time = new Date('2026-11-14T12:00:00Z').toLocaleTimeString(undefined, {
       hour: '2-digit',
       minute: '2-digit',
@@ -189,9 +191,9 @@ describe('new entry modal', () => {
     expect($('modalTitle').textContent).toBe('New Entry');
     expect($('deleteBtn').style.display).toBe('none');
     expect($<HTMLInputElement>('locationInput').value).toBe('BW Ost');
-    expect($<HTMLInputElement>('gradeInput').value).toBe('v5');
-    expect($<HTMLInputElement>('boardAngleInput').value).toBe('40');
-    expect($('boardAngleGroup').style.display).toBe('flex');
+    expect($<HTMLInputElement>('field-grade').value).toBe('v5');
+    expect($<HTMLInputElement>('field-angle').value).toBe('40');
+    expect(texts('#activityFields label')).toEqual(['angle', 'grade']);
     expect(q('.activity-tab.active').getAttribute('data-activity')).toBe('kilter');
     expect($('contextBody').classList.contains('hidden')).toBe(true);
     expect($('contextToggleLink').textContent).toBe('Change');
@@ -215,14 +217,14 @@ describe('new entry modal', () => {
     expect($('contextSummaryText').textContent).toBe('Unknown Location • boulder');
   });
 
-  it('shows one tab per configured activity, and the angle only for activities with it', async () => {
+  it('shows one tab per configured activity, and the fields of the selected activity', async () => {
     await start([attempt()]);
     $('openModalBtn').click();
     expect(texts('.activity-tab')).toEqual(['boulder', 'route', 'kilter']);
     expect(q('.activity-tab.active').dataset.activity).toBe('boulder');
-    expect($('boardAngleGroup').style.display).toBe('none');
+    expect(texts('#activityFields label')).toEqual(['grade']);
     q('.activity-tab[data-activity="kilter"]').click();
-    expect($('boardAngleGroup').style.display).toBe('flex');
+    expect(texts('#activityFields label')).toEqual(['angle', 'grade']);
     expect(texts('.cat-btn')).toEqual(['🟢 Success', '🔴 Failure', '⚪ Work']);
   });
 
@@ -236,7 +238,6 @@ describe('new entry modal', () => {
     expect($('contextSummaryText').textContent).toBe('New Gym • boulder');
     q('[data-activity="route"]', $('contextBody')).click();
     expect($('contextSummaryText').textContent).toBe('New Gym • route');
-    expect($('boardAngleGroup').style.display).toBe('none');
   });
 
   it('closes via the close button and the overlay without saving', async () => {
@@ -250,7 +251,7 @@ describe('new entry modal', () => {
     expect(stored()).toHaveLength(1);
   });
 
-  it('suggests up to 3 recent unique locations; matches first, then recent ones', async () => {
+  it('suggests up to 3 recent distinct locations; matches first, then backfill', async () => {
     await start(
       ['Gym1', 'Gym2', 'gym2', 'Gym3', 'Gym4'].map((location, i) =>
         attempt({ id: `a${i}`, location, loggedAt: `2026-11-0${i + 1}T12:00:00Z` }),
@@ -265,22 +266,52 @@ describe('new entry modal', () => {
     expect($('contextSummaryText').textContent).toBe('Gym1 • boulder');
   });
 
-  it('suggests grades the same way', async () => {
-    await start(['v1', 'v2', 'v3', 'v4'].map((grade, i) => attempt({ id: `a${i}`, grade })));
+  it('suggests grades: this gym first, then the same activity elsewhere, then any activity', async () => {
+    await start([
+      attempt({ id: 'r', activity: 'route', location: 'TK', grade: '7-' }),
+      attempt({ id: 's', location: 'Seoul', grade: '8', loggedAt: '2026-11-14T12:01:00Z' }),
+      attempt({ id: 'b', location: 'BW Ost', grade: '6', loggedAt: '2026-11-14T12:02:00Z' }),
+    ]);
     $('openModalBtn').click();
-    expect(texts('#gradeChips .chip-small')).toEqual(['v4', 'v3', 'v2']);
-    type('gradeInput', 'v1');
-    expect(texts('#gradeChips .chip-small')).toEqual(['v1', 'v4', 'v3']);
+    expect(texts('#chips-grade .chip-small')).toEqual(['6', '8', '7-']);
+    // the prefilled value doesn't filter, and is highlighted
+    expect(q('#chips-grade .chip-small.current').textContent).toBe('6');
+    // typed text: values starting with it first, then the rest as backfill
+    type('field-grade', '7');
+    expect(texts('#chips-grade .chip-small')).toEqual(['7-', '6', '8']);
+    clickChip('chips-grade', '8');
+    expect($<HTMLInputElement>('field-grade').value).toBe('8');
+    expect(texts('#chips-grade .chip-small')).toEqual(['6', '8', '7-']);
   });
 
-  it('fills the angle from angle chips', async () => {
-    await start([attempt({ activity: 'kilter' })]);
+  it('suggests angles from recent board attempts', async () => {
+    await start([
+      attempt({ id: 'k1', activity: 'kilter', angle: '45' }),
+      attempt({ id: 'k2', activity: 'kilter', angle: '40', loggedAt: '2026-11-14T12:01:00Z' }),
+    ]);
     $('openModalBtn').click();
-    q('#angleChips [data-angle="45"]').click();
-    expect($<HTMLInputElement>('boardAngleInput').value).toBe('45');
+    expect(texts('#chips-angle .chip-small')).toEqual(['40', '45']);
+    clickChip('chips-angle', '45');
+    expect($<HTMLInputElement>('field-angle').value).toBe('45');
   });
 
-  it('shows outcome chips by recency, then unused registered outcomes, max 8', async () => {
+  it('switching activity loads that activity’s previous attempt', async () => {
+    await start([
+      attempt({ id: 'k', activity: 'kilter', location: 'Home', angle: '40', grade: 'v5' }),
+      attempt({ id: 'b', location: 'BW Ost', grade: '6', loggedAt: '2026-11-14T12:01:00Z' }),
+    ]);
+    $('openModalBtn').click();
+    q('.activity-tab[data-activity="kilter"]').click();
+    expect($<HTMLInputElement>('locationInput').value).toBe('Home');
+    expect($<HTMLInputElement>('field-angle').value).toBe('40');
+    expect($<HTMLInputElement>('field-grade').value).toBe('v5');
+    // no previous route attempt: location and shared fields are kept
+    q('.activity-tab[data-activity="route"]').click();
+    expect($<HTMLInputElement>('locationInput').value).toBe('Home');
+    expect($<HTMLInputElement>('field-grade').value).toBe('v5');
+  });
+
+  it('shows outcome chips by recency, then unused outcomes from the list, max 8', async () => {
     const outcomes = 'abcdefghij'.split('').map((name) => ({ name, category: 'success' }));
     await start([attempt({ id: '1', outcome: 'c' }), attempt({ id: '2', outcome: 'e' })], outcomes);
     $('openModalBtn').click();
@@ -303,7 +334,7 @@ describe('logging attempts', () => {
   it('logs a new attempt when an outcome chip is clicked', async () => {
     await start([attempt({ activity: 'kilter', angle: '40' })]);
     $('openModalBtn').click();
-    type('gradeInput', 'v5');
+    type('field-grade', 'v5');
     clickChip('frequentOutcomesRow', 'flash');
     const all = stored();
     expect(all).toHaveLength(2);
@@ -321,30 +352,23 @@ describe('logging attempts', () => {
     expect(document.querySelectorAll('.entry-card')).toHaveLength(2);
   });
 
-  it('reuses the existing casing of location and grade', async () => {
+  it('cleans typed text but keeps its case', async () => {
     await start([attempt({ location: 'BW Ost', grade: 'V4' })]);
     $('openModalBtn').click();
-    type('locationInput', '  bw ost ');
-    type('gradeInput', 'v4');
+    type('locationInput', '  bw   ost ');
+    type('field-grade', 'v4');
     clickChip('frequentOutcomesRow', 'flash');
-    expect(stored()[1]).toMatchObject({ location: 'BW Ost', grade: 'V4' });
+    expect(stored()[1]).toMatchObject({ location: 'bw ost', grade: 'v4' });
   });
 
-  it('omits the board angle when empty or not kilterboard', async () => {
+  it('requires location and every activity field', async () => {
     await start([attempt({ activity: 'kilter', angle: '40' })]);
     $('openModalBtn').click();
-    type('boardAngleInput', '');
-    clickChip('frequentOutcomesRow', 'flash');
-    expect(stored()[1]).not.toHaveProperty('boardAngle');
-  });
-
-  it('requires location and grade', async () => {
-    await start([attempt()]);
-    $('openModalBtn').click();
-    type('gradeInput', '   ');
+    type('field-angle', '');
+    type('locationInput', '   ');
     clickChip('frequentOutcomesRow', 'flash');
     expect(alertMock).toHaveBeenCalledWith(
-      'Please fill in both Location and Grade before selecting an outcome.',
+      'Please fill in location, angle before selecting an outcome.',
     );
     expect(stored()).toHaveLength(1);
     expect($('modalOverlay').classList.contains('active')).toBe(true);
@@ -352,7 +376,7 @@ describe('logging attempts', () => {
 });
 
 describe('custom outcomes', () => {
-  it('shows the category row only while a name is typed', async () => {
+  it('shows the category row only while a new name is typed', async () => {
     await start([attempt()]);
     $('openModalBtn').click();
     expect($('categorySelectorRow').style.display).toBe('none');
@@ -387,7 +411,6 @@ describe('custom outcomes', () => {
     expect(storedOutcomes()).toContainEqual({ name: 'fell at crux', category: 'failure' });
     expect(stored()[1]).toMatchObject({ outcome: 'fell at crux', location: 'BW Ost' });
     expect(q('.entry-status-badge').className).toContain('entry-status-red');
-    expect($('outcomes-list').querySelectorAll('option')).toHaveLength(4);
   });
 
   it('keeps expanded history groups when registering an outcome fails to log', async () => {
@@ -397,35 +420,28 @@ describe('custom outcomes', () => {
     expect(oldGroup().classList.contains('collapsed')).toBe(false);
 
     $('openModalBtn').click();
-    type('gradeInput', '');
+    type('field-grade', '');
     type('customOutcomeInput', 'new one');
     q('.cat-btn[data-cat="success"]').click();
     $('saveCustomOutcomeBtn').click();
 
-    expect(alertMock).toHaveBeenCalledWith(
-      'Please fill in both Location and Grade before selecting an outcome.',
-    );
+    expect(alertMock).toHaveBeenCalledWith('Please fill in grade before selecting an outcome.');
     expect(storedOutcomes()).toContainEqual({ name: 'new one', category: 'success' });
     expect(texts('#frequentOutcomesRow .chip')).toContain('new one');
     expect(oldGroup().classList.contains('collapsed')).toBe(false);
   });
 
-  it('does not duplicate an existing outcome or change its category', async () => {
+  it('typing filters the outcome chips; an existing name is picked from its chip, not saved', async () => {
     await start([attempt()]);
     $('openModalBtn').click();
-    type('customOutcomeInput', 'FLASH');
-    q('.cat-btn[data-cat="failure"]').click();
+    type('customOutcomeInput', 'le');
+    expect(texts('#frequentOutcomesRow .chip')).toEqual(['learning', 'flash', 'fell']);
+    type('customOutcomeInput', ' FLASH ');
+    expect(texts('#frequentOutcomesRow .chip')[0]).toBe('flash');
+    expect($('categorySelectorRow').style.display).toBe('none');
     $('saveCustomOutcomeBtn').click();
     expect(storedOutcomes()).toEqual(OUTCOMES);
-    expect(stored()[1].outcome).toBe('flash');
-  });
-
-  it('fills the datalist with registered outcomes, sorted', async () => {
-    await start([attempt()]);
-    $('openModalBtn').click();
-    expect(
-      [...$('outcomes-list').querySelectorAll('option')].map((o) => o.getAttribute('value')),
-    ).toEqual(['fell', 'flash', 'learning']);
+    expect(stored()).toHaveLength(1);
   });
 });
 
@@ -442,18 +458,18 @@ describe('editing and deleting', () => {
     edit('a1');
     expect($('modalTitle').textContent).toBe('Edit Entry');
     expect($('deleteBtn').style.display).toBe('block');
-    expect($<HTMLInputElement>('gradeInput').value).toBe('v3');
-    expect($<HTMLInputElement>('boardAngleInput').value).toBe('40');
+    expect($<HTMLInputElement>('field-grade').value).toBe('v3');
+    expect($<HTMLInputElement>('field-angle').value).toBe('40');
     expect($('contextBody').classList.contains('hidden')).toBe(true);
     // suggestions exclude the entry being edited
-    expect(texts('#gradeChips .chip-small')).toEqual(['v4']);
+    expect(texts('#chips-grade .chip-small')).toEqual(['v4']);
   });
 
   it('updates the entry in place, keeping id and time', async () => {
     await start(data());
     edit('a1');
-    type('gradeInput', 'v6');
-    type('boardAngleInput', '45');
+    type('field-grade', 'v6');
+    type('field-angle', '45');
     clickChip('frequentOutcomesRow', 'fell');
     expect(stored()).toHaveLength(2);
     expect(stored()[0]).toEqual({
@@ -467,31 +483,55 @@ describe('editing and deleting', () => {
     });
   });
 
-  it('drops the board angle when the activity changes', async () => {
+  it('drops the board angle when the activity changes, keeping the shared grade', async () => {
     await start(data());
     edit('a1');
     q('.activity-tab[data-activity="route"]').click();
+    expect($<HTMLInputElement>('field-grade').value).toBe('v3');
     clickChip('frequentOutcomesRow', 'flash');
-    expect(stored()[0].activity).toBe('route');
-    expect(stored()[0]).not.toHaveProperty('boardAngle');
+    expect(stored()[0]).toMatchObject({ activity: 'route', grade: 'v3' });
+    expect(stored()[0]).not.toHaveProperty('angle');
   });
 
-  it('highlights the most recent outcome, not the edited entry’s (quirk)', async () => {
+  it('keeps a defined field the activity does not list, without showing it', async () => {
+    await start([attempt({ id: 'b', angle: '30' })]); // boulder doesn't list angle
+    expect(texts('.grade-badge')).toEqual(['v4']);
+    edit('b');
+    expect(document.getElementById('field-angle')).toBeNull();
+    clickChip('frequentOutcomesRow', 'fell');
+    expect(stored()[0]).toMatchObject({ outcome: 'fell', angle: '30' });
+  });
+
+  it('highlights the edited entry’s outcome', async () => {
     await start([attempt({ id: 'a1', outcome: 'fell' }), attempt({ id: 'a2', outcome: 'flash' })]);
     edit('a1');
     const chip = (t: string) =>
       [...$('frequentOutcomesRow').children].find((c) => c.textContent === t) as HTMLElement;
-    expect(chip('flash').style.outline).not.toBe('');
-    expect(chip('fell').style.outline).toBe('');
+    expect(chip('fell').style.outline).not.toBe('');
+    expect(chip('flash').style.outline).toBe('');
   });
 
-  it('deletes without confirmation (quirk)', async () => {
+  it('deletes only on the second tap', async () => {
     await start(data());
     edit('a2');
+    $('deleteBtn').click();
+    expect($('deleteBtn').textContent).toBe('Tap again to delete');
+    expect(stored()).toHaveLength(2);
     $('deleteBtn').click();
     expect(confirmMock).not.toHaveBeenCalled();
     expect(stored().map((a) => a.id)).toEqual(['a1']);
     expect($('modalOverlay').classList.contains('active')).toBe(false);
+  });
+
+  it('resets the delete button when the sheet closes', async () => {
+    await start(data());
+    edit('a2');
+    $('deleteBtn').click();
+    $('closeModalBtn').click();
+    edit('a2');
+    expect($('deleteBtn').textContent).toBe('Delete Entry');
+    $('deleteBtn').click();
+    expect(stored()).toHaveLength(2);
   });
 
   it('a new entry after cancelling an edit is added, not an edit', async () => {
@@ -752,7 +792,7 @@ describe('saved data that cannot be used', () => {
     // logging works again
     $('openModalBtn').click();
     type('locationInput', 'Gym');
-    type('gradeInput', '6a');
+    type('field-grade', '6a');
     type('customOutcomeInput', 'flash');
     q('.cat-btn[data-cat="success"]').click();
     $('saveCustomOutcomeBtn').click();

@@ -1,3 +1,4 @@
+import { findActivity } from '../config';
 import { getCategory } from '../core/outcomes';
 import { groupIntoSessions, type Session } from '../core/sessions';
 import type { Attempt, Category, Outcome } from '../core/types';
@@ -72,11 +73,11 @@ export function mountHistoryView(store: Store, onEdit: (id: string) => void): vo
     });
     const badgeClass = BADGE_CLASS[getCategory(outcomes, entry.outcome)];
 
-    let html = `
+    const html = `
         <div class="entry-main-row">
           <div class="entry-left">
             <span class="entry-time">${time}</span>
-            <span class="grade-badge">${escapeHtml(entry.grade)}</span>
+            ${fieldBadges(entry)}
             <span class="entry-status-badge ${badgeClass}">${escapeHtml(entry.outcome)}</span>
           </div>
           <div class="entry-right">
@@ -84,12 +85,17 @@ export function mountHistoryView(store: Store, onEdit: (id: string) => void): vo
           </div>
         </div>
       `;
-    if (entry.angle) {
-      html += `<div class="entry-details-row"><span class="detail-tag">Angle: ${escapeHtml(entry.angle)}&deg;</span></div>`;
-    }
     card.innerHTML = html;
     card.querySelector('.edit-btn')!.addEventListener('click', () => onEdit(entry.id));
     return card;
+  }
+
+  /** The activity's fields as badges, in config order. Fields it doesn't list aren't shown. */
+  function fieldBadges(entry: Attempt) {
+    return (findActivity(entry.activity)?.fields ?? [])
+      .filter((field) => entry[field])
+      .map((field) => `<span class="grade-badge">${escapeHtml(entry[field])}</span>`)
+      .join('');
   }
 
   render(store.getState());
