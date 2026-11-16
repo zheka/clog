@@ -6,7 +6,11 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
     />
-    <title>Clog - Local Climbing Log</title>
+    <title>CLog</title>
+    <meta name="theme-color" content="#1e1e24" />
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon-180x180.png" />
     <link rel="stylesheet" href="/src/style.css" />
   </head>
   <body>
@@ -68,6 +72,14 @@
                 <span class="menu-action-sub">Restore attempts from a backup file</span>
               </div>
               <span class="menu-action-icon">&darr;</span>
+            </button>
+
+            <button type="button" id="appUpdateBtn" class="menu-action-btn">
+              <div class="menu-action-info">
+                <span>App Version</span>
+                <span class="menu-action-sub" id="appUpdateStatus"></span>
+              </div>
+              <span class="menu-action-icon">&#8635;</span>
             </button>
           </div>
 

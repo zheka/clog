@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- CLog app icon: a faceted climbing hold with its bolt, on the app's dark background.
+       Kept within the central safe zone so Android's masks don't cut it. -->
+  <rect width="512" height="512" fill="#121214"/>
+  <g transform="translate(256 256) scale(1.25) translate(-262 -256)">
+  <g stroke-linejoin="round" stroke-width="10">
+    <!-- facets, light from the top left -->
+    <polygon points="132,262 176,170 262,256" fill="#60a5fa" stroke="#60a5fa"/>
+    <polygon points="176,170 296,132 262,256" fill="#93c5fd" stroke="#93c5fd"/>
+    <polygon points="296,132 382,196 262,256" fill="#60a5fa" stroke="#60a5fa"/>
+    <polygon points="382,196 390,300 262,256" fill="#3b82f6" stroke="#3b82f6"/>
+    <polygon points="390,300 300,374 262,256" fill="#2563eb" stroke="#2563eb"/>
+    <polygon points="300,374 182,356 262,256" fill="#1d4ed8" stroke="#1d4ed8"/>
+    <polygon points="182,356 132,262 262,256" fill="#2563eb" stroke="#2563eb"/>
+  </g>
+  <!-- bolt: washer and hex socket -->
+  <circle cx="262" cy="256" r="36" fill="#9ca3af"/>
+  <circle cx="262" cy="256" r="28" fill="#d1d5db"/>
+  <polygon points="262,237 278,246 278,266 262,275 246,266 246,246" fill="#121214"/>
+  </g>
+</svg>

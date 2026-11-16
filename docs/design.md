@@ -459,7 +459,6 @@ Rules for every chip row:
 - **CSV export for analysis.** One-way. Outcomes are expanded (`fell`, `failure`) so nothing has
   to be guessed. Activity descriptions and other insights are given to the AI separately, not
   stored in the app.
-- **PWA**: offline, installable, persistent storage.
 
 ## Open questions
 
@@ -485,10 +484,14 @@ Rules for every chip row:
    one-line chip rows (8, recency), outcome as a text-first field with new-outcome chips,
    spacing cleanup. To test in real life: the top sheet, outcomes on one line vs two, chips above
    the fields, the chip count.
-4. **Next round:** messages inside the form instead of `alert`/`confirm`, two-tap import
+4. **Done: PWA.** Installable as "CLog" (full-screen, climbing-hold icon), works offline,
+   asks for persistent storage. Updates download in the background and take over on the next
+   launch; the menu's **App Version** item shows the version and can check for and install an
+   update right away. The app never reloads by itself.
+5. **Next round:** messages inside the form instead of `alert`/`confirm`, two-tap import
    confirmation; field properties when a need shows up.
-5. **Later:** the `npm run backup` scripts (`check`, `upgrade`, `rename-outcome`, `merge`), bug
-   reports, PWA, CSV export, Google Sheets sync.
+6. **Later:** the `npm run backup` scripts (`check`, `upgrade`, `rename-outcome`, `merge`), bug
+   reports, CSV export, Google Sheets sync.
 
 Each step keeps the current safety net: behaviour changes update the UI tests that pin the
 old behaviour.

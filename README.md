@@ -16,7 +16,8 @@ npm test           # unit tests (Vitest)
 npm run lint       # ESLint
 npm run typecheck  # TypeScript
 npm run build      # type-check + production build into dist/
-npm run preview    # serve dist/ locally
+npm run preview    # serve dist/ locally (the only way to try offline mode and updates)
+npm run icons      # regenerate the app icons in public/ from public/icon.svg
 ```
 
 ## Layout
@@ -42,6 +43,7 @@ src/
     entryModal.ts       new/edit entry sheet
     menuModal.ts        backup menu
     problemScreen.ts    shown instead of the app when saved data can't be used
+  pwa.ts              offline support, updates, persistent storage
     dom.ts              small DOM helpers
   style.css
   app.test.ts         UI tests: the whole app in jsdom
@@ -51,6 +53,13 @@ src/
 See docs/design.md for the data model and decisions.
 
 Data flows one way: UI event → store action → new state → saved → subscribed views re-render.
+
+## Installing on a phone
+
+CLog is a PWA: open https://zheka.github.io/clog/ in Chrome and choose **Install app** (or
+**Add to Home screen**). It then opens full-screen and works offline; the data stays on the
+device. A new version downloads in the background and takes over on the next launch, or right
+away from the menu (**App Version**).
 
 ## Deployment
 

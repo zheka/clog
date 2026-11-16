@@ -1,10 +1,19 @@
 import { backupFileName, createBackup, parseBackup } from '../data/backup';
 import { removeLegacyData } from '../data/storage';
+import type { UpdateStatus, Updates } from '../pwa';
 import type { Store } from '../store';
 import { byId, downloadFile } from './dom';
 
-/** The "Data & Backup" sheet: JSON export and import. */
-export function mountMenuModal(store: Store): void {
+const UPDATE_TEXT: Record<UpdateStatus, string> = {
+  unavailable: 'updates work in the installed app',
+  'up-to-date': 'up to date · tap to check',
+  checking: 'checking for updates…',
+  ready: 'update ready · tap to install',
+  offline: "couldn't check (offline?) · tap to retry",
+};
+
+/** The "Data & Backup" sheet: JSON export and import, and the app version with updates. */
+export function mountMenuModal(store: Store, updates: Updates): void {
   const overlay = byId('menuModalOverlay');
   const fileInput = byId<HTMLInputElement>('importFileInput');
 
@@ -59,6 +68,17 @@ export function mountMenuModal(store: Store): void {
     };
     reader.readAsText(file);
   }
+
+  const updateStatus = byId('appUpdateStatus');
+  const showUpdateStatus = (status: UpdateStatus) => {
+    updateStatus.textContent = `${__APP_VERSION__} · ${UPDATE_TEXT[status]}`;
+  };
+  showUpdateStatus(updates.status());
+  updates.subscribe(showUpdateStatus);
+  byId('appUpdateBtn').addEventListener('click', () => {
+    if (updates.status() === 'ready') updates.apply();
+    else updates.check();
+  });
 
   byId('openMenuBtn').addEventListener('click', open);
   byId('closeMenuModalBtn').addEventListener('click', close);

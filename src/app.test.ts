@@ -646,6 +646,15 @@ describe('editing and deleting', () => {
 });
 
 describe('backup menu', () => {
+  it('shows the app version (updates only in the installed app)', async () => {
+    await start([attempt()]);
+    expect($('appUpdateStatus').textContent).toMatch(
+      /^\S+ · \d{4}-\d\d-\d\d · updates work in the installed app$/,
+    );
+    $('appUpdateBtn').click(); // nothing to do outside a production build
+    expect(alertMock).not.toHaveBeenCalled();
+  });
+
   it('opens and closes', async () => {
     await start([attempt()]);
     $('openMenuBtn').click();

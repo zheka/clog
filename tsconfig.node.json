@@ -1,0 +1,14 @@
+{
+  // Build and tooling files run in Node, not the browser: they get Node's types, the app doesn't.
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "types": ["node"],
+    "noEmit": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "allowJs": true
+  },
+  "include": ["vite.config.ts", "pwa-assets.config.ts", "eslint.config.js"]
+}
