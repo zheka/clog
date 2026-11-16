@@ -428,10 +428,8 @@ input[type='number']:focus {
   color: var(--text);
 }
 
-.context-toggle-link {
-  font-size: 0.8rem;
-  color: var(--primary);
-  font-weight: 600;
+.context-accordion-header.collapsed .group-chevron {
+  transform: rotate(-90deg);
 }
 
 .context-collapsible-body {

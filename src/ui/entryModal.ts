@@ -40,7 +40,6 @@ export function mountEntryModal(store: Store): EntryModal {
   const contextHeader = byId('contextHeader');
   const contextBody = byId('contextBody');
   const contextSummary = byId('contextSummaryText');
-  const contextToggle = byId('contextToggleLink');
   const fieldsContainer = byId('activityFields');
   const outcomeInput = byId<HTMLInputElement>('outcomeInput');
   const outcomeChips = byId('outcomeChips');
@@ -132,7 +131,9 @@ export function mountEntryModal(store: Store): EntryModal {
 
   function setContextExpanded(expanded: boolean) {
     contextBody.classList.toggle('hidden', !expanded);
-    contextToggle.textContent = expanded ? 'Hide' : 'Change';
+    // Same chevron as the history groups: down when open, right when collapsed.
+    contextHeader.classList.toggle('collapsed', !expanded);
+    contextHeader.setAttribute('aria-expanded', String(expanded));
   }
 
   function renderChips(text: TextInput) {

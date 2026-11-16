@@ -199,7 +199,7 @@ describe('new entry modal', () => {
     expect(texts('#activityFields label')).toEqual(['angle', 'grade']);
     expect(q('.activity-tab.active').getAttribute('data-activity')).toBe('kilter');
     expect($('contextBody').classList.contains('hidden')).toBe(true);
-    expect($('contextToggleLink').textContent).toBe('Change');
+    expect($('contextHeader').getAttribute('aria-expanded')).toBe('false');
     expect($('contextSummaryText').textContent).toBe('BW Ost • kilter');
   });
 
@@ -211,7 +211,7 @@ describe('new entry modal', () => {
     await start([attempt({ loggedAt: '2026-11-15T07:59:00Z' })]);
     $('openModalBtn').click();
     expect($('contextBody').classList.contains('hidden')).toBe(false);
-    expect($('contextToggleLink').textContent).toBe('Hide');
+    expect($('contextHeader').getAttribute('aria-expanded')).toBe('true');
 
     await start(undefined);
     $('openModalBtn').click();
@@ -235,7 +235,7 @@ describe('new entry modal', () => {
     $('openModalBtn').click();
     $('contextHeader').click();
     expect($('contextBody').classList.contains('hidden')).toBe(false);
-    expect($('contextToggleLink').textContent).toBe('Hide');
+    expect($('contextHeader').getAttribute('aria-expanded')).toBe('true');
     type('locationInput', 'New Gym');
     expect($('contextSummaryText').textContent).toBe('New Gym • boulder');
     q('[data-activity="route"]', $('contextBody')).click();
@@ -493,6 +493,12 @@ describe('layout', () => {
       const row = getComputedStyle($(id));
       expect([id, row.flexWrap, row.overflowX]).toEqual([id, 'nowrap', 'auto']);
     }
+    // the context bar uses the history's chevron: right when collapsed, down when open
+    const chevron = () => getComputedStyle(q('#contextHeader .group-chevron')).transform;
+    $('contextHeader').click();
+    const first = chevron();
+    $('contextHeader').click();
+    expect([first, chevron()].sort()).toEqual(['none', 'rotate(-90deg)']);
     // even spacing: the form and the activity fields both separate sections by 20px
     expect(getComputedStyle($('entryForm')).rowGap).toBe('20px');
     expect(getComputedStyle($('activityFields')).rowGap).toBe('20px');
