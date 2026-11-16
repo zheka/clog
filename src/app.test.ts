@@ -397,7 +397,7 @@ describe('logging attempts', () => {
 });
 
 describe('typing an outcome', () => {
-  const newChips = () => [...document.querySelectorAll<HTMLElement>('#outcomeChips .new-outcome')];
+  const newChips = () => [...document.querySelectorAll<HTMLElement>('#newOutcomeChips .chip')];
 
   it('starts empty and shows recent outcomes, the previous one highlighted', async () => {
     await start([attempt({ outcome: 'fell' })]);
@@ -411,22 +411,28 @@ describe('typing an outcome', () => {
     await start([attempt()]);
     $('openModalBtn').click();
     type('outcomeInput', 'le');
-    expect(texts('#outcomeChips .chip:not(.new-outcome)')).toEqual(['learning']);
+    expect(texts('#outcomeChips .chip')).toEqual(['learning']);
     type('outcomeInput', ' FLASH ');
     // an exact match: just its chip, no new-outcome chips
     expect(texts('#outcomeChips .chip')).toEqual(['flash']);
+    expect(newChips()).toHaveLength(0);
     clickChip('outcomeChips', 'flash');
     expect(stored()[1].outcome).toBe('flash');
     expect(storedOutcomes()).toEqual(OUTCOMES);
   });
 
-  it('offers one chip per category for a new name, after the matches', async () => {
+  it('offers one chip per category for a new name, in a row of its own below', async () => {
     await start([attempt()]);
     $('openModalBtn').click();
+    const newRowVisible = () => getComputedStyle($('newOutcomeChips')).display !== 'none';
+    expect(newRowVisible()).toBe(false);
     type('outcomeInput', 'fl');
-    expect(texts('#outcomeChips .chip')).toEqual(['flash', '🟢 fl', '🔴 fl', '⚪ fl']);
+    expect(texts('#outcomeChips .chip')).toEqual(['flash']);
+    expect(texts('#newOutcomeChips .chip')).toEqual(['🟢 fl', '🔴 fl', '⚪ fl']);
+    expect(newRowVisible()).toBe(true);
     type('outcomeInput', '  Fell At Crux ');
-    expect(texts('#outcomeChips .chip')).toEqual([
+    expect(texts('#outcomeChips .chip')).toEqual([]);
+    expect(texts('#newOutcomeChips .chip')).toEqual([
       '🟢 fell at crux',
       '🔴 fell at crux',
       '⚪ fell at crux',
@@ -881,7 +887,7 @@ describe('saved data that cannot be used', () => {
     type('locationInput', 'Gym');
     type('field-grade', '6a');
     type('outcomeInput', 'flash');
-    q('#outcomeChips .new-outcome').click();
+    q('#newOutcomeChips .chip').click();
     expect(stored()).toHaveLength(1);
   });
 });

@@ -505,6 +505,11 @@ input[type='number']:focus {
   min-height: 40px;
 }
 
+/* The new-outcome row takes no space unless a new name is typed */
+.new-outcome-row:empty {
+  display: none;
+}
+
 .chips-container > *,
 .outcome-row > * {
   flex: none;

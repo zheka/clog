@@ -44,6 +44,7 @@ export function mountEntryModal(store: Store): EntryModal {
   const fieldsContainer = byId('activityFields');
   const outcomeInput = byId<HTMLInputElement>('outcomeInput');
   const outcomeChips = byId('outcomeChips');
+  const newOutcomeChips = byId('newOutcomeChips');
 
   const location: TextInput = {
     field: 'location',
@@ -163,23 +164,25 @@ export function mountEntryModal(store: Store): EntryModal {
     }
   }
 
-  function outcomeChip(text: string, category: Category, onTap: () => void) {
+  function outcomeChip(row: HTMLElement, text: string, category: Category, onTap: () => void) {
     const chip = document.createElement('span');
     chip.className = `chip ${category}`;
     chip.textContent = text;
     chip.addEventListener('click', onTap);
-    outcomeChips.appendChild(chip);
+    row.appendChild(chip);
     return chip;
   }
 
   /**
-   * No text: recent outcomes. While typing: matching outcomes, then (for a name that doesn't
-   * exist yet) one chip per category that creates the outcome and saves the entry.
+   * No text: recent outcomes. While typing: matching outcomes, and (for a name that doesn't
+   * exist yet) a row of its own below with one chip per category, which creates the outcome
+   * and saves the entry.
    */
   function renderOutcomeChips() {
     const { outcomes } = store.getState();
     const name = normalizeName(outcomeInput.value);
     outcomeChips.innerHTML = '';
+    newOutcomeChips.innerHTML = '';
     for (const outcome of suggestOutcomes(
       attempts(),
       outcomes,
@@ -187,13 +190,15 @@ export function mountEntryModal(store: Store): EntryModal {
       name,
       config.maxChips,
     )) {
-      const chip = outcomeChip(outcome, getCategory(outcomes, outcome), () => logAttempt(outcome));
+      const category = getCategory(outcomes, outcome);
+      const chip = outcomeChip(outcomeChips, outcome, category, () => logAttempt(outcome));
       // Highlight the field's current value
       if (outcome === currentOutcome) chip.classList.add('current');
     }
     if (name && !outcomes.some((o) => o.name === name)) {
       for (const category of CATEGORIES) {
-        const chip = outcomeChip(`${CATEGORY_MARK[category]} ${name}`, category, () => {
+        const label = `${CATEGORY_MARK[category]} ${name}`;
+        const chip = outcomeChip(newOutcomeChips, label, category, () => {
           // Registered even if logging then fails validation.
           store.addOutcome({ name, category });
           logAttempt(name);

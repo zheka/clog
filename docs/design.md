@@ -398,10 +398,11 @@ Rules for every chip row:
 - Outcome chips come **from the outcome list only**; history decides their order.
 - The outcome input **starts empty**: the tap is the save, so a prefilled value would do
   nothing. The previous outcome (when editing, the entry's own) is highlighted among the chips.
-- **While typing**, the row shows only the matching outcomes (no backfill), then, for a name
-  that doesn't exist yet, **one chip per category** (`🟢 name`, `🔴 name`, `⚪ name`): tapping one
-  creates the outcome in that category and saves the attempt. An exact match shows no
-  new-outcome chips. There is no separate custom-outcome block.
+- **While typing**, the row shows only the matching outcomes (no backfill). For a name that
+  doesn't exist yet, a **row of its own below** shows one chip per category (`🟢 name`,
+  `🔴 name`, `⚪ name`): tapping one creates the outcome in that category and saves the attempt.
+  That row is hidden otherwise, including for an exact match. There is no separate
+  custom-outcome block.
 
 ### Saving, deleting, messages
 
