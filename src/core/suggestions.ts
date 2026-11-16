@@ -46,9 +46,9 @@ export function fieldCandidates(
 
 /**
  * Orders values for typed text, ignoring case: values starting with it, then values containing
- * it, then the rest (backfill). Otherwise keeps the given order. No text keeps the order as is.
+ * it, then (with `backfill`) the rest. Otherwise keeps the given order. No text keeps the order.
  */
-export function rankByQuery(values: string[], query: string): string[] {
+export function rankByQuery(values: string[], query: string, backfill = true): string[] {
   const q = query.trim().toLowerCase();
   if (!q) return values;
   const starts: string[] = [];
@@ -60,7 +60,7 @@ export function rankByQuery(values: string[], query: string): string[] {
     else if (lower.includes(q)) contains.push(v);
     else rest.push(v);
   }
-  return [...starts, ...contains, ...rest];
+  return backfill ? [...starts, ...contains, ...rest] : [...starts, ...contains];
 }
 
 export function suggestValues(
@@ -90,6 +90,10 @@ export function outcomeCandidates(
   return list;
 }
 
+/**
+ * Outcome chips: with no text, the candidates in order; while typing, only the matching ones
+ * (no backfill: the form offers new-outcome chips instead).
+ */
 export function suggestOutcomes(
   attempts: Attempt[],
   outcomes: Outcome[],
@@ -97,5 +101,6 @@ export function suggestOutcomes(
   query: string,
   limit = 8,
 ): string[] {
-  return rankByQuery(outcomeCandidates(attempts, outcomes, activity), query).slice(0, limit);
+  const candidates = outcomeCandidates(attempts, outcomes, activity);
+  return rankByQuery(candidates, query, false).slice(0, limit);
 }

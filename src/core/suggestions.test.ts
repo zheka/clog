@@ -47,6 +47,10 @@ describe('rankByQuery', () => {
     expect(rankByQuery(values, '6')).toEqual(['6', '6+', '7/6+', 'six', '5']);
   });
 
+  it('drops non-matching values without backfill', () => {
+    expect(rankByQuery(values, '6', false)).toEqual(['6', '6+', '7/6+']);
+  });
+
   it('ignores case and surrounding spaces, and keeps the order for no text', () => {
     expect(rankByQuery(['BW Ost', 'Seoul'], ' bw ')).toEqual(['BW Ost', 'Seoul']);
     expect(rankByQuery(values, '  ')).toEqual(values);
@@ -84,11 +88,9 @@ describe('outcomes', () => {
     ]);
   });
 
-  it('are filtered by typed text, with backfill', () => {
-    expect(suggestOutcomes(attempts, outcomes, 'boulder', 'f', 3)).toEqual([
-      'flash',
-      'fell',
-      'onsight',
-    ]);
+  it('while typing, only the matching ones (no backfill), up to the limit', () => {
+    expect(suggestOutcomes(attempts, outcomes, 'boulder', 'f', 3)).toEqual(['flash', 'fell']);
+    expect(suggestOutcomes(attempts, outcomes, 'boulder', 'f', 1)).toEqual(['flash']);
+    expect(suggestOutcomes(attempts, outcomes, 'boulder', 'xyz')).toEqual([]);
   });
 });

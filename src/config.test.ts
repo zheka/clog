@@ -17,6 +17,7 @@ describe('validateConfig', () => {
     fields: { grade: {} },
     activities: [{ name: 'boulder', fields: ['grade'] }],
     sameSessionHours: 2,
+    maxChips: 8,
   };
   const problems = (patch: Partial<AppConfig>) => validateConfig({ ...base, ...patch });
 
@@ -49,5 +50,6 @@ describe('validateConfig', () => {
     expect(problems({ activities: [{ name: 'Boulder', fields: [] }] })).toHaveLength(1);
     expect(problems({ activities: [] })).toEqual(['no activities']);
     expect(problems({ sameSessionHours: 0 })).toEqual(['sameSessionHours must be positive']);
+    expect(problems({ maxChips: 0 })).toEqual(['maxChips must be at least 1']);
   });
 });

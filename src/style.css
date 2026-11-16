@@ -429,7 +429,7 @@ input[type='number']:focus {
 .context-collapsible-body {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
   background: var(--input-bg);
   border: 1px solid var(--border);
   border-top: none;
@@ -473,12 +473,33 @@ input[type='number']:focus {
   color: white;
 }
 
-.chips-container {
+.chips-container,
+.outcome-row {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 6px;
-  margin-top: 2px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+}
+
+.chips-container::-webkit-scrollbar,
+.outcome-row::-webkit-scrollbar {
+  display: none;
+}
+
+.chips-container {
   min-height: 28px;
+}
+
+.outcome-row {
+  min-height: 40px;
+}
+
+.chips-container > *,
+.outcome-row > * {
+  flex: none;
+  white-space: nowrap;
 }
 
 .chip-small {
@@ -495,18 +516,6 @@ input[type='number']:focus {
 
 .chip-small:active {
   background: var(--primary);
-}
-
-.outcome-picker {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.outcome-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
 }
 
 .chip {
@@ -555,70 +564,6 @@ input[type='number']:focus {
 .chip.work:active {
   background: var(--work);
   color: white;
-}
-
-/* Custom Outcome Input Box */
-.custom-outcome-box {
-  background: var(--input-bg);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.custom-outcome-input-row {
-  display: flex;
-  gap: 6px;
-}
-
-.category-selector-row {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-}
-
-.cat-btn {
-  flex: 1;
-  padding: 6px;
-  border-radius: 6px;
-  border: 1px solid var(--border);
-  background: var(--card-bg);
-  color: var(--text-muted);
-  font-size: 0.78rem;
-  font-weight: 600;
-  cursor: pointer;
-  text-align: center;
-}
-
-.cat-btn.selected-success {
-  background: rgba(16, 185, 129, 0.2);
-  border-color: var(--success);
-  color: var(--success);
-}
-
-.cat-btn.selected-failure {
-  background: rgba(239, 68, 68, 0.2);
-  border-color: var(--failure);
-  color: var(--failure);
-}
-
-.cat-btn.selected-work {
-  background: rgba(107, 114, 128, 0.2);
-  border-color: var(--work);
-  color: var(--text);
-}
-
-.save-custom-btn {
-  background: var(--primary);
-  color: white;
-  border: none;
-  padding: 8px 14px;
-  border-radius: 6px;
-  font-weight: 600;
-  font-size: 0.85rem;
-  cursor: pointer;
 }
 
 .form-actions {
@@ -701,35 +646,6 @@ input[type='number']:focus {
   opacity: 0.85;
 }
 
-/* "Add Custom Outcome" accordion in the entry sheet */
-.custom-outcomes-accordion {
-  background: var(--input-bg);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 10px 12px;
-}
-
-.custom-outcomes-accordion > summary {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  cursor: pointer;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  user-select: none;
-}
-
-.custom-outcomes-accordion .custom-outcome-box {
-  margin-top: 10px;
-  padding: 0;
-  border: none;
-  background: transparent;
-}
-
-.custom-outcomes-accordion .category-selector-row {
-  margin-top: 8px;
-}
-
 /* Problem mode: saved data can't be used; only the problem screen is shown */
 .problem-mode #mainContent,
 .problem-mode .fab,
@@ -796,9 +712,26 @@ input[type='number']:focus {
 .activity-fields {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
 }
 
-.activity-fields label {
-  text-transform: capitalize;
+/* No fields (an activity without any): take no space */
+.activity-fields:empty {
+  display: none;
+}
+
+/* The entry sheet opens from the top, so the keyboard (at the bottom) doesn't cover the fields */
+.modal-overlay.from-top {
+  align-items: flex-start;
+}
+
+.modal-overlay.from-top .modal-sheet {
+  border-radius: 0 0 20px 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  transform: translateY(-100%);
+  padding-top: calc(20px + env(safe-area-inset-top, 0px));
+}
+
+.modal-overlay.from-top.active .modal-sheet {
+  transform: translateY(0);
 }

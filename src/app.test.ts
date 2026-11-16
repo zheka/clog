@@ -228,7 +228,6 @@ describe('new entry modal', () => {
     expect(texts('#activityFields label')).toEqual(['grade']);
     q('.activity-tab[data-activity="kilter"]').click();
     expect(texts('#activityFields label')).toEqual(['angle', 'grade']);
-    expect(texts('.cat-btn')).toEqual(['🟢 Success', '🔴 Failure', '⚪ Work']);
   });
 
   it('toggles the context section and updates its summary while typing', async () => {
@@ -254,16 +253,35 @@ describe('new entry modal', () => {
     expect(stored()).toHaveLength(1);
   });
 
-  it('suggests up to 3 recent distinct locations; matches first, then backfill', async () => {
+  it('suggests up to 8 recent distinct locations; matches first, then backfill', async () => {
+    const names = ['Gym1', 'Gym2', 'gym2', 'Gym3', 'Gym4', 'Gym5', 'Gym6', 'Gym7', 'Gym8', 'Gym9'];
     await start(
-      ['Gym1', 'Gym2', 'gym2', 'Gym3', 'Gym4'].map((location, i) =>
-        attempt({ id: `a${i}`, location, loggedAt: `2026-11-0${i + 1}T12:00:00Z` }),
+      names.map((location, i) =>
+        attempt({ id: `a${i}`, location, loggedAt: `2026-11-1${i}T12:00:00Z` }),
       ),
     );
     $('openModalBtn').click();
-    expect(texts('#locationChips .chip-small')).toEqual(['Gym4', 'Gym3', 'gym2']);
+    expect(texts('#locationChips .chip-small')).toEqual([
+      'Gym9',
+      'Gym8',
+      'Gym7',
+      'Gym6',
+      'Gym5',
+      'Gym4',
+      'Gym3',
+      'gym2',
+    ]);
     type('locationInput', 'gym1');
-    expect(texts('#locationChips .chip-small')).toEqual(['Gym1', 'Gym4', 'Gym3']);
+    expect(texts('#locationChips .chip-small')).toEqual([
+      'Gym1',
+      'Gym9',
+      'Gym8',
+      'Gym7',
+      'Gym6',
+      'Gym5',
+      'Gym4',
+      'Gym3',
+    ]);
     clickChip('locationChips', 'Gym1');
     expect($<HTMLInputElement>('locationInput').value).toBe('Gym1');
     expect($('contextSummaryText').textContent).toBe('Gym1 • boulder');
@@ -318,8 +336,8 @@ describe('new entry modal', () => {
     const outcomes = 'abcdefghij'.split('').map((name) => ({ name, category: 'success' }));
     await start([attempt({ id: '1', outcome: 'c' }), attempt({ id: '2', outcome: 'e' })], outcomes);
     $('openModalBtn').click();
-    expect(texts('#frequentOutcomesRow .chip')).toEqual(['e', 'c', 'a', 'b', 'd', 'f', 'g', 'h']);
-    const chips = [...$('frequentOutcomesRow').children] as HTMLElement[];
+    expect(texts('#outcomeChips .chip')).toEqual(['e', 'c', 'a', 'b', 'd', 'f', 'g', 'h']);
+    const chips = [...$('outcomeChips').children] as HTMLElement[];
     expect(chips[0].className).toBe('chip success');
     // the last used outcome is highlighted
     expect(chips[0].style.outline).not.toBe('');
@@ -329,7 +347,7 @@ describe('new entry modal', () => {
   it('shows no outcome chips on a fresh install (empty registry)', async () => {
     await start(undefined, null);
     $('openModalBtn').click();
-    expect($('frequentOutcomesRow').children).toHaveLength(0);
+    expect($('outcomeChips').children).toHaveLength(0);
   });
 });
 
@@ -338,7 +356,7 @@ describe('logging attempts', () => {
     await start([attempt({ activity: 'kilter', angle: '40' })]);
     $('openModalBtn').click();
     type('field-grade', 'v5');
-    clickChip('frequentOutcomesRow', 'flash');
+    clickChip('outcomeChips', 'flash');
     const all = stored();
     expect(all).toHaveLength(2);
     expect(all[1]).toEqual({
@@ -360,7 +378,7 @@ describe('logging attempts', () => {
     $('openModalBtn').click();
     type('locationInput', '  bw   ost ');
     type('field-grade', 'v4');
-    clickChip('frequentOutcomesRow', 'flash');
+    clickChip('outcomeChips', 'flash');
     expect(stored()[1]).toMatchObject({ location: 'bw ost', grade: 'v4' });
   });
 
@@ -369,7 +387,7 @@ describe('logging attempts', () => {
     $('openModalBtn').click();
     type('field-angle', '');
     type('locationInput', '   ');
-    clickChip('frequentOutcomesRow', 'flash');
+    clickChip('outcomeChips', 'flash');
     expect(alertMock).toHaveBeenCalledWith(
       'Please fill in location, angle before selecting an outcome.',
     );
@@ -378,41 +396,56 @@ describe('logging attempts', () => {
   });
 });
 
-describe('custom outcomes', () => {
-  it('shows the category row only while a new name is typed', async () => {
-    await start([attempt()]);
+describe('typing an outcome', () => {
+  const newChips = () => [...document.querySelectorAll<HTMLElement>('#outcomeChips .new-outcome')];
+
+  it('starts empty and shows recent outcomes, the previous one highlighted', async () => {
+    await start([attempt({ outcome: 'fell' })]);
     $('openModalBtn').click();
-    expect($('categorySelectorRow').style.display).toBe('none');
-    type('customOutcomeInput', 'x');
-    expect($('categorySelectorRow').style.display).toBe('flex');
-    q('.cat-btn[data-cat="work"]').click();
-    expect(q('.cat-btn[data-cat="work"]').className).toBe('cat-btn selected-work');
-    type('customOutcomeInput', '');
-    expect($('categorySelectorRow').style.display).toBe('none');
-    expect(q('.cat-btn[data-cat="work"]').className).toBe('cat-btn');
+    expect($<HTMLInputElement>('outcomeInput').value).toBe('');
+    expect(texts('#outcomeChips .chip')).toEqual(['fell', 'flash', 'learning']);
+    expect(q('#outcomeChips .chip').style.outline).not.toBe('');
   });
 
-  it('validates name and category', async () => {
+  it('shows only matching outcomes while typing, no backfill', async () => {
     await start([attempt()]);
     $('openModalBtn').click();
-    $('saveCustomOutcomeBtn').click();
-    expect(alertMock).toHaveBeenLastCalledWith('Please enter an outcome name.');
-    type('customOutcomeInput', 'sloppy heel');
-    $('saveCustomOutcomeBtn').click();
-    expect(alertMock).toHaveBeenLastCalledWith(
-      'Please select whether this outcome is a Success, Failure, or Work.',
-    );
-    expect(stored()).toHaveLength(1);
+    type('outcomeInput', 'le');
+    expect(texts('#outcomeChips .chip:not(.new-outcome)')).toEqual(['learning']);
+    type('outcomeInput', ' FLASH ');
+    // an exact match: just its chip, no new-outcome chips
+    expect(texts('#outcomeChips .chip')).toEqual(['flash']);
+    clickChip('outcomeChips', 'flash');
+    expect(stored()[1].outcome).toBe('flash');
+    expect(storedOutcomes()).toEqual(OUTCOMES);
   });
 
-  it('registers the outcome (lowercased) and logs the attempt', async () => {
+  it('offers one chip per category for a new name, after the matches', async () => {
     await start([attempt()]);
     $('openModalBtn').click();
-    type('customOutcomeInput', '  Fell At Crux ');
-    q('.cat-btn[data-cat="failure"]').click();
-    $('saveCustomOutcomeBtn').click();
+    type('outcomeInput', 'fl');
+    expect(texts('#outcomeChips .chip')).toEqual(['flash', '🟢 fl', '🔴 fl', '⚪ fl']);
+    type('outcomeInput', '  Fell At Crux ');
+    expect(texts('#outcomeChips .chip')).toEqual([
+      '🟢 fell at crux',
+      '🔴 fell at crux',
+      '⚪ fell at crux',
+    ]);
+    expect(newChips().map((c) => c.className)).toEqual([
+      'chip success new-outcome',
+      'chip failure new-outcome',
+      'chip work new-outcome',
+    ]);
+  });
+
+  it('a new-outcome chip registers the outcome (normalised) and logs the attempt', async () => {
+    await start([attempt()]);
+    $('openModalBtn').click();
+    type('outcomeInput', '  Fell At Crux ');
+    newChips()[1].click();
     expect(storedOutcomes()).toContainEqual({ name: 'fell at crux', category: 'failure' });
     expect(stored()[1]).toMatchObject({ outcome: 'fell at crux', location: 'BW Ost' });
+    expect($('modalOverlay').classList.contains('active')).toBe(false);
     expect(q('.entry-status-badge').className).toContain('entry-status-red');
   });
 
@@ -424,27 +457,55 @@ describe('custom outcomes', () => {
 
     $('openModalBtn').click();
     type('field-grade', '');
-    type('customOutcomeInput', 'new one');
-    q('.cat-btn[data-cat="success"]').click();
-    $('saveCustomOutcomeBtn').click();
+    type('outcomeInput', 'new one');
+    newChips()[0].click();
 
     expect(alertMock).toHaveBeenCalledWith('Please fill in grade before selecting an outcome.');
     expect(storedOutcomes()).toContainEqual({ name: 'new one', category: 'success' });
-    expect(texts('#frequentOutcomesRow .chip')).toContain('new one');
+    // registered, so it is now an ordinary chip
+    expect(texts('#outcomeChips .chip')).toEqual(['new one']);
     expect(oldGroup().classList.contains('collapsed')).toBe(false);
   });
 
-  it('typing filters the outcome chips; an existing name is picked from its chip, not saved', async () => {
+  it('clears the typed text when the sheet opens again', async () => {
     await start([attempt()]);
     $('openModalBtn').click();
-    type('customOutcomeInput', 'le');
-    expect(texts('#frequentOutcomesRow .chip')).toEqual(['learning', 'flash', 'fell']);
-    type('customOutcomeInput', ' FLASH ');
-    expect(texts('#frequentOutcomesRow .chip')[0]).toBe('flash');
-    expect($('categorySelectorRow').style.display).toBe('none');
-    $('saveCustomOutcomeBtn').click();
-    expect(storedOutcomes()).toEqual(OUTCOMES);
+    type('outcomeInput', 'xyz');
+    $('closeModalBtn').click();
+    $('openModalBtn').click();
+    expect($<HTMLInputElement>('outcomeInput').value).toBe('');
+    expect(newChips()).toHaveLength(0);
+  });
+});
+
+describe('layout', () => {
+  it('opens the entry sheet from the top; chip rows are one line that scrolls sideways', async () => {
+    await start([attempt()]);
+    $('openModalBtn').click();
+    expect(getComputedStyle($('modalOverlay')).alignItems).toBe('flex-start');
+    for (const id of ['locationChips', 'chips-grade', 'outcomeChips']) {
+      const row = getComputedStyle($(id));
+      expect([id, row.flexWrap, row.overflowX]).toEqual([id, 'nowrap', 'auto']);
+    }
+    // the backup menu still opens from the bottom
+    expect(getComputedStyle($('menuModalOverlay')).alignItems).toBe('flex-end');
+  });
+});
+
+describe('keyboard', () => {
+  it('"Done" closes the keyboard in every input, without saving', async () => {
+    await start([attempt({ activity: 'kilter', angle: '40' })]);
+    $('openModalBtn').click();
+    for (const id of ['locationInput', 'field-angle', 'field-grade', 'outcomeInput']) {
+      const input = $<HTMLInputElement>(id);
+      expect(input.enterKeyHint).toBe('done');
+      input.focus();
+      expect(document.activeElement).toBe(input);
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', cancelable: true }));
+      expect(document.activeElement).not.toBe(input);
+    }
     expect(stored()).toHaveLength(1);
+    expect($('modalOverlay').classList.contains('active')).toBe(true);
   });
 });
 
@@ -473,7 +534,7 @@ describe('editing and deleting', () => {
     edit('a1');
     type('field-grade', 'v6');
     type('field-angle', '45');
-    clickChip('frequentOutcomesRow', 'fell');
+    clickChip('outcomeChips', 'fell');
     expect(stored()).toHaveLength(2);
     expect(stored()[0]).toEqual({
       id: 'a1',
@@ -491,7 +552,7 @@ describe('editing and deleting', () => {
     edit('a1');
     q('.activity-tab[data-activity="route"]').click();
     expect($<HTMLInputElement>('field-grade').value).toBe('v3');
-    clickChip('frequentOutcomesRow', 'flash');
+    clickChip('outcomeChips', 'flash');
     expect(stored()[0]).toMatchObject({ activity: 'route', grade: 'v3' });
     expect(stored()[0]).not.toHaveProperty('angle');
   });
@@ -501,7 +562,7 @@ describe('editing and deleting', () => {
     expect(texts('.grade-badge')).toEqual(['v4']);
     edit('b');
     expect(document.getElementById('field-angle')).toBeNull();
-    clickChip('frequentOutcomesRow', 'fell');
+    clickChip('outcomeChips', 'fell');
     expect(stored()[0]).toMatchObject({ outcome: 'fell', angle: '30' });
   });
 
@@ -509,7 +570,7 @@ describe('editing and deleting', () => {
     await start([attempt({ id: 'a1', outcome: 'fell' }), attempt({ id: 'a2', outcome: 'flash' })]);
     edit('a1');
     const chip = (t: string) =>
-      [...$('frequentOutcomesRow').children].find((c) => c.textContent === t) as HTMLElement;
+      [...$('outcomeChips').children].find((c) => c.textContent === t) as HTMLElement;
     expect(chip('fell').style.outline).not.toBe('');
     expect(chip('flash').style.outline).toBe('');
   });
@@ -542,7 +603,7 @@ describe('editing and deleting', () => {
     edit('a1');
     $('closeModalBtn').click();
     $('openModalBtn').click();
-    clickChip('frequentOutcomesRow', 'flash');
+    clickChip('outcomeChips', 'flash');
     expect(stored()).toHaveLength(3);
   });
 });
@@ -810,9 +871,8 @@ describe('saved data that cannot be used', () => {
     $('openModalBtn').click();
     type('locationInput', 'Gym');
     type('field-grade', '6a');
-    type('customOutcomeInput', 'flash');
-    q('.cat-btn[data-cat="success"]').click();
-    $('saveCustomOutcomeBtn').click();
+    type('outcomeInput', 'flash');
+    q('#outcomeChips .new-outcome').click();
     expect(stored()).toHaveLength(1);
   });
 });

@@ -3,7 +3,7 @@
 Decisions for the next iterations of Clog: fixing UI quirks and the new data model
 (backup format `clog 0.1.0`).
 
-Status (2026-11-16): agreed. Steps 1 and 2 of the implementation plan are done; the rest
+Status (2026-11-16): agreed. Steps 1–3 of the implementation plan are done; the rest
 describes where the app is going. Where the app differs from this document, the code and
 its tests describe the current behaviour.
 
@@ -63,6 +63,7 @@ The reference list of every name in the schema. Everything else in this document
 | `fields` (activity) | the fields this activity uses, in form order            |
 | `categoryColors`    | colour of each category                                 |
 | `sameSessionHours`  | how recent the last attempt must be to collapse context |
+| `maxChips`          | most chips in one chip row                              |
 
 **Elsewhere**
 
@@ -147,6 +148,7 @@ export const config = {
     work: '#8a8a99',
   },
   sameSessionHours: 4,
+  maxChips: 8,
 } satisfies AppConfig;
 ```
 
@@ -357,10 +359,13 @@ be deleted once every device has switched over.
 
 ### Inputs and chips
 
-Two standard input patterns:
+Every input, outcome included, is **text first with a chip row below**.
 
-- **Text first, chips below:** location and all activity fields.
-- **Chips first, text below:** outcome.
+- The entry sheet **opens from the top** of the screen, so the keyboard (at the bottom) doesn't
+  cover the fields and their chips.
+- The keyboard's action key is **Done**: it closes the keyboard, nothing is saved.
+- Each chip row is **one line that scrolls sideways** (it never wraps), with at most
+  `maxChips` (8) chips. Chip sizes are unchanged.
 
 Rules for every chip row:
 
@@ -383,16 +388,20 @@ Rules for every chip row:
   activity and location.
 - Filtering while typing ignores case (`bw` shows `BW Ost`); tapping a chip stores exactly that
   spelling (see Normalisation and matching).
-- Chip counts depend on the available screen space (see Open questions).
+- Recency was compared with frequency ordering on the real log: frequency gained little for
+  fields and lost for outcomes, so all rows use recency. With 8 chips, about 99% of the values a
+  chip can offer were among them; about 85% of all entries in the first 4–5 chips.
 
 ### Outcomes
 
 - Tapping an outcome chip **saves the attempt immediately**.
 - Outcome chips come **from the outcome list only**; history decides their order.
-- Typing in the custom-outcome field **filters the outcome chip row** (it replaces the
-  browser's suggestion list). If an existing outcome has the same normalised name, the
-  category buttons are hidden and saving is disabled: tap the chip instead.
-- A new outcome requires choosing a category (buttons for the fixed categories).
+- The outcome input **starts empty**: the tap is the save, so a prefilled value would do
+  nothing. The previous outcome (when editing, the entry's own) is highlighted among the chips.
+- **While typing**, the row shows only the matching outcomes (no backfill), then, for a name
+  that doesn't exist yet, **one chip per category** (`🟢 name`, `🔴 name`, `⚪ name`): tapping one
+  creates the outcome in that category and saves the attempt. An exact match shows no
+  new-outcome chips. There is no separate custom-outcome block.
 
 ### Saving, deleting, messages
 
@@ -448,8 +457,8 @@ Rules for every chip row:
 
 ## Open questions
 
-- UX details: layout of the form on a phone, chip counts, and the field properties (`display`,
-  `suffix`, labels…).
+- After real-life testing: the top sheet, outcomes on one line or two, chips above the fields,
+  the chip count. Field properties (`suffix`, labels…) when a need shows up.
 - Editing an entry's time: how to make it unobtrusive.
 - Switching activity in the form loads that activity's previous attempt: confirm.
 - A `style` field for `route`: suspended until needed.
@@ -464,9 +473,13 @@ Rules for every chip row:
    fields from the config, chip pools with backfill, cleaning without case changes, required
    fields, outcome chips from the list with current-value highlight and filtering, switching
    activity, keeping unlisted fields on edit); badge-only cards; two-tap delete.
-3. **Round 2, after a UX discussion:** layout and chip counts, field properties, messages inside
-   the form instead of `alert`/`confirm`, two-tap import confirmation.
-4. **Later:** the `npm run backup` scripts (`check`, `upgrade`, `rename-outcome`, `merge`), bug
+3. **Done (round 2, from a UX interview):** entry sheet at the top, Done closes the keyboard,
+   one-line chip rows (8, recency), outcome as a text-first field with new-outcome chips,
+   spacing cleanup. To test in real life: the top sheet, outcomes on one line vs two, chips above
+   the fields, the chip count.
+4. **Next round:** messages inside the form instead of `alert`/`confirm`, two-tap import
+   confirmation; field properties when a need shows up.
+5. **Later:** the `npm run backup` scripts (`check`, `upgrade`, `rename-outcome`, `merge`), bug
    reports, PWA, CSV export, Google Sheets sync.
 
 Each step keeps the current safety net: behaviour changes update the UI tests that pin the

@@ -25,6 +25,8 @@ export interface AppConfig {
   activities: ActivityConfig[];
   /** A new entry starts with the context (activity, location) collapsed this soon after the last one. */
   sameSessionHours: number;
+  /** Most chips in one chip row (the row is a single line that scrolls sideways). */
+  maxChips: number;
 }
 
 export const config: AppConfig = {
@@ -38,6 +40,7 @@ export const config: AppConfig = {
     { name: 'kilter', fields: ['angle', 'grade'] },
   ],
   sameSessionHours: 4,
+  maxChips: 8,
 };
 
 export function findActivity(name: string, cfg: AppConfig = config): ActivityConfig | undefined {
@@ -72,5 +75,6 @@ export function validateConfig(cfg: AppConfig): string[] {
     }
   }
   if (!(cfg.sameSessionHours > 0)) problems.push('sameSessionHours must be positive');
+  if (!(cfg.maxChips >= 1)) problems.push('maxChips must be at least 1');
   return problems;
 }

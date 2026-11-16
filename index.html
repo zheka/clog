@@ -80,7 +80,7 @@
         </div>
       </div>
 
-      <div id="modalOverlay" class="modal-overlay">
+      <div id="modalOverlay" class="modal-overlay from-top">
         <div class="modal-sheet">
           <div class="modal-header">
             <span id="modalTitle" class="modal-title">New Entry</span>
@@ -117,39 +117,16 @@
             <!-- The selected activity's own fields (from config.ts), rendered by the app -->
             <div id="activityFields" class="activity-fields"></div>
 
-            <!-- Outcome Section: Top Frequent Chips -->
+            <!-- Outcome: tapping a chip saves the entry; typing finds or adds an outcome -->
             <div class="form-group">
-              <label>Outcome</label>
-              <div class="outcome-picker">
-                <div class="outcome-row" id="frequentOutcomesRow">
-                  <!-- Dynamically rendered top frequent outcomes -->
-                </div>
-              </div>
-            </div>
-
-            <!-- Collapsible Custom Outcome On-The-Fly Section (Collapsed by default via <details>) -->
-            <div class="form-group">
-              <details class="custom-outcomes-accordion">
-                <summary>Add Custom Outcome</summary>
-                <div class="custom-outcome-box">
-                  <div class="custom-outcome-input-row">
-                    <input
-                      type="text"
-                      id="customOutcomeInput"
-                      placeholder="e.g. sloppy heel hook"
-                      autocomplete="off"
-                    />
-                  </div>
-                  <div class="category-selector-row" id="categorySelectorRow" style="display: none">
-                    <button type="button" class="cat-btn" data-cat="success">🟢 Success</button>
-                    <button type="button" class="cat-btn" data-cat="failure">🔴 Failure</button>
-                    <button type="button" class="cat-btn" data-cat="work">⚪ Work</button>
-                    <button type="button" id="saveCustomOutcomeBtn" class="save-custom-btn">
-                      Save & Log
-                    </button>
-                  </div>
-                </div>
-              </details>
+              <label for="outcomeInput">Outcome</label>
+              <input
+                type="text"
+                id="outcomeInput"
+                placeholder="find or add an outcome"
+                autocomplete="off"
+              />
+              <div id="outcomeChips" class="outcome-row"></div>
             </div>
 
             <div class="form-actions">

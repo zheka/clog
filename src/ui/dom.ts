@@ -22,6 +22,17 @@ export function downloadFile(fileName: string, content: string, mimeType: string
   URL.revokeObjectURL(url);
 }
 
+/** The keyboard's action key shows "Done" and closes the keyboard; nothing is submitted. */
+export function closeKeyboardOnDone(input: HTMLInputElement): void {
+  input.enterKeyHint = 'done';
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      input.blur();
+    }
+  });
+}
+
 /** How long a two-tap button waits for the confirming second tap. */
 const CONFIRM_MS = 4000;
 

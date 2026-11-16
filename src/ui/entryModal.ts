@@ -2,14 +2,13 @@ import { config, findActivity } from '../config';
 import { getCategory } from '../core/outcomes';
 import { suggestOutcomes, suggestValues, type Scope } from '../core/suggestions';
 import { cleanText, normalizeName } from '../core/text';
-import type { Attempt, Category } from '../core/types';
+import { CATEGORIES, type Attempt, type Category } from '../core/types';
 import type { Store } from '../store';
-import { byId, twoTapButton } from './dom';
+import { byId, closeKeyboardOnDone, twoTapButton } from './dom';
 
 /** Within this time since the last attempt, a new entry starts with the context collapsed. */
 const SAME_SESSION_MS = config.sameSessionHours * 60 * 60 * 1000;
-const FIELD_CHIPS = 3;
-const OUTCOME_CHIPS = 8;
+const CATEGORY_MARK: Record<Category, string> = { success: '🟢', failure: '🔴', work: '⚪' };
 
 export interface EntryModal {
   openNew(): void;
@@ -26,14 +25,13 @@ interface TextInput {
 
 /**
  * The New/Edit Entry sheet: context (activity, location), the activity's own fields from
- * config.ts, and the outcome. Picking an outcome saves the entry immediately;
- * "Save & Log" registers a custom outcome first.
+ * config.ts, and the outcome. Tapping an outcome chip saves the entry immediately; typing a
+ * new outcome name offers one chip per category that creates the outcome and saves.
  */
 export function mountEntryModal(store: Store): EntryModal {
   let editingId: string | null = null;
   let selectedActivity = config.activities[0].name;
   let currentOutcome: string | null = null;
-  let selectedCustomCategory: Category | null = null;
 
   const overlay = byId('modalOverlay');
   const title = byId('modalTitle');
@@ -44,12 +42,8 @@ export function mountEntryModal(store: Store): EntryModal {
   const contextSummary = byId('contextSummaryText');
   const contextToggle = byId('contextToggleLink');
   const fieldsContainer = byId('activityFields');
-  const outcomeChips = byId('frequentOutcomesRow');
-
-  const customInput = byId<HTMLInputElement>('customOutcomeInput');
-  const categoryRow = byId('categorySelectorRow');
-  const categoryBtns = document.querySelectorAll<HTMLElement>('.cat-btn');
-  const saveCustomBtn = byId('saveCustomOutcomeBtn');
+  const outcomeInput = byId<HTMLInputElement>('outcomeInput');
+  const outcomeChips = byId('outcomeChips');
 
   const location: TextInput = {
     field: 'location',
@@ -108,6 +102,7 @@ export function mountEntryModal(store: Store): EntryModal {
       input.type = 'text';
       input.id = `field-${field}`;
       input.autocomplete = 'off';
+      closeKeyboardOnDone(input);
       const chips = document.createElement('div');
       chips.className = 'chips-container';
       chips.id = `chips-${field}`;
@@ -141,7 +136,14 @@ export function mountEntryModal(store: Store): EntryModal {
 
   function renderChips(text: TextInput) {
     const query = text.typed ? text.input.value : '';
-    const values = suggestValues(attempts(), text.field, query, scope(), editingId, FIELD_CHIPS);
+    const values = suggestValues(
+      attempts(),
+      text.field,
+      query,
+      scope(),
+      editingId,
+      config.maxChips,
+    );
     text.chips.innerHTML = '';
     for (const value of values) {
       const chip = document.createElement('span');
@@ -161,24 +163,44 @@ export function mountEntryModal(store: Store): EntryModal {
     }
   }
 
+  function outcomeChip(text: string, category: Category, onTap: () => void) {
+    const chip = document.createElement('span');
+    chip.className = `chip ${category}`;
+    chip.textContent = text;
+    chip.addEventListener('click', onTap);
+    outcomeChips.appendChild(chip);
+    return chip;
+  }
+
+  /**
+   * No text: recent outcomes. While typing: matching outcomes, then (for a name that doesn't
+   * exist yet) one chip per category that creates the outcome and saves the entry.
+   */
   function renderOutcomeChips() {
     const { outcomes } = store.getState();
-    const query = normalizeName(customInput.value);
+    const name = normalizeName(outcomeInput.value);
     outcomeChips.innerHTML = '';
     for (const outcome of suggestOutcomes(
       attempts(),
       outcomes,
       selectedActivity,
-      query,
-      OUTCOME_CHIPS,
+      name,
+      config.maxChips,
     )) {
-      const chip = document.createElement('span');
-      chip.className = `chip ${getCategory(outcomes, outcome)}`;
+      const chip = outcomeChip(outcome, getCategory(outcomes, outcome), () => logAttempt(outcome));
       // Highlight the field's current value
       if (outcome === currentOutcome) chip.style.outline = '2px solid var(--text)';
-      chip.textContent = outcome;
-      chip.addEventListener('click', () => logAttempt(outcome));
-      outcomeChips.appendChild(chip);
+    }
+    if (name && !outcomes.some((o) => o.name === name)) {
+      for (const category of CATEGORIES) {
+        const chip = outcomeChip(`${CATEGORY_MARK[category]} ${name}`, category, () => {
+          // Registered even if logging then fails validation.
+          store.addOutcome({ name, category });
+          logAttempt(name);
+        });
+        chip.classList.add('new-outcome');
+        chip.dataset.category = category;
+      }
     }
   }
 
@@ -187,30 +209,9 @@ export function mountEntryModal(store: Store): EntryModal {
     fieldInputs.forEach(renderChips);
   }
 
-  /** The category buttons appear for a new name only; an existing one is picked from the chips. */
-  function updateCustomOutcome() {
-    const name = normalizeName(customInput.value);
-    const exists = store.getState().outcomes.some((o) => o.name === name);
-    if (name && !exists) {
-      categoryRow.style.display = 'flex';
-    } else {
-      categoryRow.style.display = 'none';
-      selectCategory(null);
-    }
-    renderOutcomeChips();
-  }
-
-  function selectCategory(category: Category | null) {
-    selectedCustomCategory = category;
-    categoryBtns.forEach((btn) => {
-      btn.className =
-        category && btn.dataset.cat === category ? `cat-btn selected-${category}` : 'cat-btn';
-    });
-  }
-
   function show() {
-    customInput.value = '';
-    updateCustomOutcome();
+    outcomeInput.value = '';
+    renderOutcomeChips();
     updateContextSummary();
     renderAllChips();
     overlay.classList.add('active');
@@ -301,23 +302,6 @@ export function mountEntryModal(store: Store): EntryModal {
     close();
   }
 
-  function saveCustomOutcome() {
-    const name = normalizeName(customInput.value);
-    if (!name) {
-      alert('Please enter an outcome name.');
-      return;
-    }
-    // An existing outcome is logged from its chip, not saved again.
-    if (store.getState().outcomes.some((o) => o.name === name)) return;
-    if (!selectedCustomCategory) {
-      alert('Please select whether this outcome is a Success, Failure, or Work.');
-      return;
-    }
-    // Registered even if logging then fails validation.
-    store.addOutcome({ name, category: selectedCustomCategory });
-    logAttempt(name);
-  }
-
   function deleteEntry() {
     if (!editingId) return;
     store.deleteAttempt(editingId);
@@ -336,17 +320,15 @@ export function mountEntryModal(store: Store): EntryModal {
   contextHeader.addEventListener('click', () => {
     setContextExpanded(contextBody.classList.contains('hidden'));
   });
+  closeKeyboardOnDone(location.input);
+  closeKeyboardOnDone(outcomeInput);
   location.input.addEventListener('input', () => {
     location.typed = true;
     updateContextSummary();
     renderAllChips();
   });
 
-  customInput.addEventListener('input', updateCustomOutcome);
-  categoryBtns.forEach((btn) =>
-    btn.addEventListener('click', () => selectCategory(btn.dataset.cat as Category)),
-  );
-  saveCustomBtn.addEventListener('click', saveCustomOutcome);
+  outcomeInput.addEventListener('input', renderOutcomeChips);
 
   // Keep outcome chips current while the sheet is open.
   store.subscribe((state, prev) => {
