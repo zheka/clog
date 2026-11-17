@@ -3,13 +3,14 @@ import { clearData, loadData, saveData } from './data/storage';
 import { createStore } from './store';
 import { mountAttemptModal } from './ui/attemptModal';
 import { mountHistoryView } from './ui/HistoryView';
-import { mountMenuModal } from './ui/menuModal';
+import { mountMenuModal } from './ui/MenuSheet';
 import { requestPersistentStorage, setupUpdates } from './pwa';
-import { showProblemScreen } from './ui/problemScreen';
+import { mountProblemScreen, showProblemScreen } from './ui/ProblemScreen';
 
 // Offline support and updates work even when the saved data can't be used.
 const updates = setupUpdates();
 requestPersistentStorage();
+mountProblemScreen();
 
 function startApp(data: { attempts: Attempt[]; outcomes: Outcome[] }) {
   const store = createStore(data, (state) => saveData(state.attempts, state.outcomes));
