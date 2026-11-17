@@ -567,9 +567,9 @@ describe('layout', () => {
     expect(getComputedStyle($('activityFields')).rowGap).toBe('20px');
     // field chips have a minimum tap size; the highlight is drawn inside the chip
     const chip = getComputedStyle(q('#chips-grade .chip-small'));
-    expect([chip.minWidth, chip.minHeight]).toEqual(['48px', '48px']);
+    expect([chip.minWidth, chip.minHeight]).toEqual(['64px', '48px']);
     const outcomeChip = getComputedStyle(q('#outcomeChips .chip'));
-    expect([outcomeChip.minWidth, outcomeChip.minHeight]).toEqual(['48px', '48px']);
+    expect([outcomeChip.minWidth, outcomeChip.minHeight]).toEqual(['64px', '48px']);
     const current = getComputedStyle(q('#chips-grade .chip-small.current'));
     expect(current.outlineOffset).toBe('-2px');
     expect(getComputedStyle(q('#outcomeChips .chip.current')).outlineOffset).toBe('-2px');
