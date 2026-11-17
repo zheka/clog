@@ -403,17 +403,66 @@ describe('logging attempts', () => {
     expect(stored()[1]).toMatchObject({ location: 'bw ost', grade: 'v4' });
   });
 
-  it('requires location and every activity field', async () => {
+  it('requires every field: empty ones show a red "add …" hint and the outcome chips fade', async () => {
     await start([attempt({ activity: 'kilter', angle: '40' })]);
     $('openModalBtn').click();
+    const blocked = () => $('outcomeChips').classList.contains('blocked');
+    expect(blocked()).toBe(false);
+    expect($<HTMLInputElement>('field-angle').placeholder).toBe('add angle');
+    expect($<HTMLInputElement>('locationInput').placeholder).toBe('add location');
+    expect(getComputedStyle(q('#outcomeChips .chip')).opacity).toBe('1');
+
     type('field-angle', '');
-    type('locationInput', '   ');
+    expect(blocked()).toBe(true);
+    expect(getComputedStyle(q('#outcomeChips .chip')).opacity).toBe('0.35');
+    expect(getComputedStyle(q('#outcomeChips .chip')).pointerEvents).toBe('none');
+    // a stray tap still does nothing, and there is no popup
     clickChip('outcomeChips', 'flash');
-    expect(alertMock).toHaveBeenCalledWith(
-      'Please fill in location, angle before selecting an outcome.',
-    );
     expect(stored()).toHaveLength(1);
+    expect(alertMock).not.toHaveBeenCalled();
     expect($('modalOverlay').classList.contains('active')).toBe(true);
+
+    // filling the field (here from a chip) makes the outcome chips active again
+    clickChip('chips-angle', '40');
+    expect(blocked()).toBe(false);
+    clickChip('outcomeChips', 'flash');
+    expect(stored()).toHaveLength(2);
+  });
+
+  it('new-outcome chips are inactive too, and register nothing while a field is empty', async () => {
+    await start([attempt()]);
+    $('openModalBtn').click();
+    type('field-grade', '');
+    type('outcomeInput', 'new one');
+    expect($('newOutcomeChips').classList.contains('blocked')).toBe(true);
+    q('#newOutcomeChips .chip').click();
+    expect(storedOutcomes()).toEqual(OUTCOMES);
+    expect(stored()).toHaveLength(1);
+  });
+
+  it('opens the context section when the location is empty', async () => {
+    // fresh install: nothing to prefill
+    await start(undefined, null);
+    $('openModalBtn').click();
+    expect($('contextBody').classList.contains('hidden')).toBe(false);
+    expect($('outcomeChips').classList.contains('blocked')).toBe(true);
+    // switching activity with no previous attempt keeps it open while the location is empty
+    q('.activity-tab[data-activity="kilter"]').click();
+    expect($('contextBody').classList.contains('hidden')).toBe(false);
+  });
+
+  it('keeps the context section open while the location is empty', async () => {
+    await start([attempt({ loggedAt: '2026-11-15T11:30:00Z' })]); // same session: starts collapsed
+    $('openModalBtn').click();
+    const open = () => !$('contextBody').classList.contains('hidden');
+    expect(open()).toBe(false);
+    $('contextHeader').click();
+    type('locationInput', '');
+    $('contextHeader').click(); // try to collapse
+    expect(open()).toBe(true);
+    type('locationInput', 'Gym');
+    $('contextHeader').click();
+    expect(open()).toBe(false);
   });
 });
 
@@ -485,24 +534,6 @@ describe('typing an outcome', () => {
     expect(stored()[1]).toMatchObject({ outcome: 'fell at crux', location: 'BW Ost' });
     expect($('modalOverlay').classList.contains('active')).toBe(false);
     expect(q('.attempt-status-badge').className).toContain('attempt-status-red');
-  });
-
-  it('keeps expanded history groups when registering an outcome fails to log', async () => {
-    await start([attempt({ id: 'old', location: 'Old Gym' }), attempt({ id: 'new' })]);
-    const oldGroup = () => q('[data-attempt-id="old"]').closest('.group-container')!;
-    q('.group-header', oldGroup()).click();
-    expect(oldGroup().classList.contains('collapsed')).toBe(false);
-
-    $('openModalBtn').click();
-    type('field-grade', '');
-    type('outcomeInput', 'new one');
-    newChips()[0].click();
-
-    expect(alertMock).toHaveBeenCalledWith('Please fill in grade before selecting an outcome.');
-    expect(storedOutcomes()).toContainEqual({ name: 'new one', category: 'success' });
-    // registered, so it is now an ordinary chip
-    expect(texts('#outcomeChips .chip')).toEqual(['new one']);
-    expect(oldGroup().classList.contains('collapsed')).toBe(false);
   });
 
   it('clears the typed text when the sheet opens again', async () => {

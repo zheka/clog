@@ -409,7 +409,9 @@ Rules for every chip row:
 ### Saving, deleting, messages
 
 - **All fields are required** when saving (location and every activity field); usually they
-  are already prefilled. For now the browser `alert` names the missing fields.
+  are already prefilled. An empty field shows a red hint ("add location", "add grade"), which is
+  never part of the value. While any field is empty, the outcome chips (which save) are faded
+  and inactive, so there is no popup. An empty location keeps the context section open.
 - **Editing keeps fields the form doesn't show:** a field defined in `config.fields` but not
   listed for the attempt's activity is kept as it is. Fields the previous activity listed and
   the new one doesn't are dropped (kilter → boulder drops the angle).
@@ -418,8 +420,8 @@ Rules for every chip row:
 - **Destructive actions use a two-tap confirmation inside the button:** "Delete" →
   "Tap again to delete". No dialogs, no browser `confirm()`. The same pattern is used elsewhere,
   e.g. replacing all data on import: "Replace my 118 attempts" → "Confirm replace".
-- Messages (validation errors, import results and problems) are shown **inside the form or
-  menu**, not with browser `alert()`.
+- The form shows no popups. The backup menu still uses browser `alert`/`confirm` for import and
+  export results (kept for now).
 
 ## History view
 

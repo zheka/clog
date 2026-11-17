@@ -491,6 +491,18 @@ input[type='number']:focus {
   display: none;
 }
 
+/* Empty required fields show their "add …" hint in red */
+.required-input::placeholder {
+  color: var(--failure);
+  opacity: 1;
+}
+
+/* Outcome chips save the attempt: faded and inactive while a required field is empty */
+.outcome-row.blocked .chip {
+  opacity: 0.35;
+  pointer-events: none;
+}
+
 /* A chip row without chips takes no space (e.g. typed text that matches nothing) */
 .chips-container:empty,
 .outcome-row:empty {

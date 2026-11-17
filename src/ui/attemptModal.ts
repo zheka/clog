@@ -108,6 +108,9 @@ export function mountAttemptModal(store: Store): AttemptModal {
       input.type = 'text';
       input.id = `field-${field}`;
       input.autocomplete = 'off';
+      // Red hint while empty: all fields are required (the hint is never part of the value).
+      input.placeholder = `add ${field}`;
+      input.classList.add('required-input');
       closeKeyboardOnDone(input);
       const chips = document.createElement('div');
       chips.className = 'chips-container';
@@ -134,6 +137,28 @@ export function mountAttemptModal(store: Store): AttemptModal {
   function updateContextSummary() {
     const loc = location.input.value.trim() || 'Unknown Location';
     contextSummary.textContent = `${loc} • ${selectedActivity}`;
+  }
+
+  /** Names of the required fields (location and the activity's fields) that are still empty. */
+  function missingFields(): string[] {
+    return [location, ...fieldInputs]
+      .filter((text) => !cleanText(text.input.value))
+      .map((text) => text.field);
+  }
+
+  /**
+   * Saving needs every field: until then the outcome chips (which save) are faded and inactive,
+   * and the empty fields show their red "add …" hint.
+   */
+  function updateSaveState() {
+    const missing = missingFields();
+    const blocked = missing.length > 0;
+    // An empty location must stay visible: keep the context section open until it's filled.
+    if (missing.includes('location')) setContextExpanded(true);
+    for (const row of [outcomeChips, newOutcomeChips]) {
+      row.classList.toggle('blocked', blocked);
+      row.setAttribute('aria-disabled', String(blocked));
+    }
   }
 
   function setContextExpanded(expanded: boolean) {
@@ -171,6 +196,7 @@ export function mountAttemptModal(store: Store): AttemptModal {
       text.chips.appendChild(chip);
     }
     showRowStart(text.chips);
+    updateSaveState();
   }
 
   /** After refilling a chip row: scroll back to its start and update its edge fades. */
@@ -214,7 +240,7 @@ export function mountAttemptModal(store: Store): AttemptModal {
       for (const category of CATEGORIES) {
         const label = `${CATEGORY_MARK[category]} ${name}`;
         const chip = outcomeChip(newOutcomeChips, label, category, () => {
-          // Registered even if logging then fails validation.
+          if (missingFields().length > 0) return;
           store.addOutcome({ name, category });
           logAttempt(name);
         });
@@ -224,6 +250,7 @@ export function mountAttemptModal(store: Store): AttemptModal {
     }
     showRowStart(outcomeChips);
     showRowStart(newOutcomeChips);
+    updateSaveState();
   }
 
   function renderAllChips() {
@@ -307,14 +334,8 @@ export function mountAttemptModal(store: Store): AttemptModal {
   function logAttempt(outcome: string) {
     const loc = cleanText(location.input.value);
     const fields = Object.fromEntries(fieldInputs.map((t) => [t.field, cleanText(t.input.value)]));
-    const missing = [
-      loc ? null : 'location',
-      ...fieldInputs.map((t) => (fields[t.field] ? null : t.field)),
-    ].filter(Boolean);
-    if (missing.length > 0) {
-      alert(`Please fill in ${missing.join(', ')} before selecting an outcome.`);
-      return;
-    }
+    // The chips are inactive while a field is empty; this only guards against a stray tap.
+    if (missingFields().length > 0) return;
     const input = { activity: selectedActivity, location: loc, outcome, fields };
     if (editingId) {
       store.updateAttempt(editingId, input);
@@ -341,6 +362,7 @@ export function mountAttemptModal(store: Store): AttemptModal {
 
   contextHeader.addEventListener('click', () => {
     setContextExpanded(contextBody.classList.contains('hidden'));
+    updateSaveState(); // stays open while the location is empty
   });
   for (const row of [location.chips, outcomeChips, newOutcomeChips]) trackScrollFades(row);
   closeKeyboardOnDone(location.input);
