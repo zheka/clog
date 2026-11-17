@@ -52,7 +52,8 @@ export default defineConfig({
     }),
   ],
   test: {
-    include: ['src/**/*.test.ts'],
+    include: ['src/**/*.test.{ts,tsx}'],
+    setupFiles: ['src/test-setup.ts'],
     // Process CSS so UI tests can apply the real stylesheet (style.css?raw).
     css: true,
   },
