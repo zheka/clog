@@ -14,36 +14,8 @@
     <link rel="stylesheet" href="/src/style.css" />
   </head>
   <body>
-    <div class="app-container">
-      <header>
-        <h1>Climbing Log</h1>
-        <button
-          id="openMenuBtn"
-          class="menu-btn"
-          aria-label="Data & Backup Menu"
-          title="Data & Backup"
-        >
-          <svg viewBox="0 0 24 24">
-            <line x1="3" y1="6" x2="21" y2="6"></line>
-            <line x1="3" y1="12" x2="21" y2="12"></line>
-            <line x1="3" y1="18" x2="21" y2="18"></line>
-          </svg>
-        </button>
-      </header>
+    <div id="app"></div>
 
-      <div id="problemRoot"></div>
-
-      <main id="mainContent">
-        <div id="historyList" class="history-list"></div>
-      </main>
-
-      <button id="openModalBtn" class="fab" aria-label="New Attempt">+</button>
-
-      <div id="menuRoot"></div>
-
-      <div id="attemptRoot"></div>
-    </div>
-
-    <script type="module" src="/src/main.ts"></script>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

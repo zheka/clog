@@ -1,7 +1,6 @@
 import { signal } from '@preact/signals';
-import { render } from 'preact';
 import { useLayoutEffect } from 'preact/hooks';
-import { byId, downloadFile } from './dom';
+import { downloadFile } from './dom';
 import { TwoTapButton } from './TwoTapButton';
 
 interface Problem {
@@ -13,19 +12,15 @@ interface Problem {
 
 const current = signal<Problem | null>(null);
 
-/**
- * Mounts the problem screen (hidden until `showProblemScreen`). Shown instead of the app when
- * the saved data can't be used, with two ways out: download the data, or start fresh.
- */
-export function mountProblemScreen(): void {
-  render(<ProblemScreen />, byId('problemRoot'));
-}
-
 export function showProblemScreen(problems: string[], raw: string, onStartFresh: () => void) {
   current.value = { problems, raw, onStartFresh };
 }
 
-function ProblemScreen() {
+/**
+ * Hidden until `showProblemScreen`. Shown instead of the app when the saved data can't be used,
+ * with two ways out: download the data, or start fresh.
+ */
+export function ProblemScreen() {
   const problem = current.value;
   // Hides the rest of the app (see .problem-mode in style.css), before the page is shown.
   useLayoutEffect(() => {

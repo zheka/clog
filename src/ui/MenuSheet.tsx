@@ -1,11 +1,10 @@
 import { signal } from '@preact/signals';
-import { render } from 'preact';
 import { useRef } from 'preact/hooks';
 import { backupFileName, createBackup, parseBackup } from '../data/backup';
 import { removeLegacyData } from '../data/storage';
 import type { UpdateStatus, Updates } from '../pwa';
 import type { Store } from '../store';
-import { byId, downloadFile } from './dom';
+import { downloadFile } from './dom';
 
 const UPDATE_TEXT: Record<UpdateStatus, string> = {
   unavailable: 'updates work in the installed app',
@@ -16,11 +15,10 @@ const UPDATE_TEXT: Record<UpdateStatus, string> = {
 };
 
 /** The "Data & Backup" sheet: JSON export and import, and the app version with updates. */
-export function mountMenuModal(store: Store, updates: Updates): void {
+export function createMenuSheet(store: Store, updates: Updates) {
   const open = signal(false);
   const updateStatus = signal(updates.status());
   updates.subscribe((status) => (updateStatus.value = status));
-  byId('openMenuBtn').addEventListener('click', () => (open.value = true));
 
   function MenuSheet() {
     const fileInput = useRef<HTMLInputElement>(null);
@@ -128,7 +126,7 @@ export function mountMenuModal(store: Store, updates: Updates): void {
     );
   }
 
-  render(<MenuSheet />, byId('menuRoot'));
+  return { open: () => (open.value = true), MenuSheet };
 }
 
 interface ActionProps {

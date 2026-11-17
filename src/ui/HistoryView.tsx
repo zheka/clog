@@ -1,5 +1,5 @@
 import { signal, type Signal } from '@preact/signals';
-import { Fragment, render } from 'preact';
+import { Fragment } from 'preact';
 import { useState } from 'preact/hooks';
 import { findActivity } from '../config';
 import { getCategory } from '../core/outcomes';
@@ -7,7 +7,6 @@ import { groupIntoSessions, type Session } from '../core/sessions';
 import type { Attempt, Category, Outcome } from '../core/types';
 import type { State, Store } from '../store';
 import { Chevron } from './Chevron';
-import { byId } from './dom';
 
 const BADGE_CLASS: Record<Category, string> = {
   success: 'attempt-status-green',
@@ -19,7 +18,7 @@ const BADGE_CLASS: Record<Category, string> = {
  * The list of attempts, grouped into sessions. Expanded/collapsed groups reset (only the newest
  * open) whenever attempts change; outcome-only changes keep them as they are.
  */
-export function mountHistoryView(store: Store, onEdit: (id: string) => void): void {
+export function createHistoryView(store: Store, onEdit: (id: string) => void) {
   const state = signal(store.getState());
   // Bumped when attempts change: re-keys the list, which resets the groups' expanded state.
   const attemptsVersion = signal(0);
@@ -27,10 +26,13 @@ export function mountHistoryView(store: Store, onEdit: (id: string) => void): vo
     if (next.attempts !== prev.attempts) attemptsVersion.value++;
     state.value = next;
   });
-  render(
-    <HistoryList state={state} version={attemptsVersion} onEdit={onEdit} />,
-    byId('historyList'),
-  );
+  return function HistoryView() {
+    return (
+      <div id="historyList" class="history-list">
+        <HistoryList state={state} version={attemptsVersion} onEdit={onEdit} />
+      </div>
+    );
+  };
 }
 
 interface ListProps {

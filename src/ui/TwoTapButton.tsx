@@ -1,5 +1,5 @@
 import type { ButtonHTMLAttributes } from 'preact';
-import { useEffect, useLayoutEffect, useState } from 'preact/hooks';
+import { useLayoutEffect, useState } from 'preact/hooks';
 
 /** How long the button waits for the confirming second tap. */
 const CONFIRM_MS = 4000;
@@ -19,7 +19,8 @@ type Props = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'onClick' | 'class'> 
  */
 export function TwoTapButton({ label, confirmLabel, onConfirm, resetKey, ...button }: Props) {
   const [armed, setArmed] = useState(false);
-  useEffect(() => {
+  // Start the reset timer right at the tap (a layout effect runs before the next paint).
+  useLayoutEffect(() => {
     if (!armed) return;
     const timer = setTimeout(() => setArmed(false), CONFIRM_MS);
     return () => clearTimeout(timer);

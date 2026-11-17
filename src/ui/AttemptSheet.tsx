@@ -1,5 +1,5 @@
 import { batch, computed, signal } from '@preact/signals';
-import { render, type ComponentChildren } from 'preact';
+import type { ComponentChildren } from 'preact';
 import { useLayoutEffect, useRef, useState } from 'preact/hooks';
 import { config, findActivity } from '../config';
 import { getCategory } from '../core/outcomes';
@@ -8,24 +8,19 @@ import { cleanText, normalizeName } from '../core/text';
 import { CATEGORIES, type Attempt, type Category } from '../core/types';
 import type { Store } from '../store';
 import { Chevron } from './Chevron';
-import { byId, scrollFades, type ScrollFades } from './dom';
+import { scrollFades, type ScrollFades } from './dom';
 import { TwoTapButton } from './TwoTapButton';
 
 /** Within this time since the last attempt, a new attempt starts with the context collapsed. */
 const SAME_SESSION_MS = config.sameSessionHours * 60 * 60 * 1000;
 const CATEGORY_MARK: Record<Category, string> = { success: '🟢', failure: '🔴', work: '⚪' };
 
-export interface AttemptModal {
-  openNew(): void;
-  openEdit(id: string): void;
-}
-
 /**
  * The New/Edit Attempt sheet: context (activity, location), the activity's own fields from
  * config.ts, and the outcome. Tapping an outcome chip saves the attempt immediately; typing a
  * new outcome name offers one chip per category that creates the outcome and saves.
  */
-export function mountAttemptModal(store: Store): AttemptModal {
+export function createAttemptSheet(store: Store) {
   // --- state -------------------------------------------------------------------
 
   const data = signal(store.getState());
@@ -364,9 +359,7 @@ export function mountAttemptModal(store: Store): AttemptModal {
     );
   }
 
-  byId('openModalBtn').addEventListener('click', openNew);
-  render(<AttemptSheet />, byId('attemptRoot'));
-  return { openNew, openEdit };
+  return { openNew, openEdit, AttemptSheet };
 }
 
 /** A text input whose keyboard action key is "Done": it closes the keyboard, saves nothing. */

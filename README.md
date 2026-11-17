@@ -23,9 +23,9 @@ npm run icons      # regenerate the app icons in public/ from public/icon.svg
 ## Layout
 
 ```
-index.html            markup
+index.html            page head and the #app mount point
 src/
-  main.ts             startup: load data, create the store, mount the views
+  main.tsx            startup: load data, create the store and views, render the App
   store.ts            app state + the only functions that change it; subscribe() for updates
   config.ts           what the app offers: activities and their fields (edit here)
   core/               pure logic, no DOM or storage
@@ -38,13 +38,14 @@ src/
   data/
     storage.ts          localStorage read/write
     backup.ts           JSON backup format "clog 0.1.0" (export, strict import)
-  ui/
-    historyView.ts      the attempt list
-    attemptModal.ts     new/edit attempt sheet
-    menuModal.ts        backup menu
-    problemScreen.ts    shown instead of the app when saved data can't be used
-  pwa.ts              offline support, updates, persistent storage
-    dom.ts              small DOM helpers
+  ui/                 Preact components
+    App.tsx             the page: header, problem screen, history, + button, sheets
+    HistoryView.tsx     the attempt list, grouped into sessions
+    AttemptSheet.tsx    new/edit attempt sheet
+    MenuSheet.tsx       backup menu and app version
+    ProblemScreen.tsx   shown instead of the app when saved data can't be used
+    TwoTapButton.tsx    two-tap confirmation inside a button
+    Chevron.tsx, dom.ts small shared pieces
   style.css
   app.test.ts         UI tests: the whole app in jsdom
   **/*.test.ts        unit tests next to the code they test
@@ -63,7 +64,8 @@ away from the menu (**App Version**).
 
 ## Dependencies
 
-The app has no runtime dependencies; everything in `package.json` is build tooling. CI runs
+The only runtime dependencies are `preact` and `@preact/signals` (the UI); everything else
+in `package.json` is build tooling. CI runs
 `npm audit --omit=dev`, which covers what ships. For the tooling, `overrides` in `package.json`
 force patched `minimatch` and `glob`. The remaining low advisory (`deepmerge`, used by Workbox
 to build the offline cache) has no patched release; it only merges our own build config.

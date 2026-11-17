@@ -493,9 +493,12 @@ Rules for every chip row:
    asks for persistent storage. Updates download in the background and take over on the next
    launch; the menu's **App Version** item shows the version and can check for and install an
    update right away. The app never reloads by itself.
-5. **Next round:** messages inside the form instead of `alert`/`confirm`, two-tap import
+5. **Done: UI in Preact.** The screens are Preact components with signals for state
+   (`preact`, `@preact/signals`, about 8 KB gzipped). Behaviour unchanged; the UI tests run
+   against the real page and pass unchanged.
+6. **Next round:** messages inside the form instead of `alert`/`confirm`, two-tap import
    confirmation; field properties when a need shows up.
-6. **Later:** the `npm run backup` scripts (`check`, `upgrade`, `rename-outcome`, `merge`), bug
+7. **Later:** the `npm run backup` scripts (`check`, `upgrade`, `rename-outcome`, `merge`), bug
    reports, CSV export, Google Sheets sync.
 
 Each step keeps the current safety net: behaviour changes update the UI tests that pin the
