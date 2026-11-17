@@ -570,6 +570,9 @@ describe('layout', () => {
     expect([chip.minWidth, chip.minHeight]).toEqual(['64px', '48px']);
     const outcomeChip = getComputedStyle(q('#outcomeChips .chip'));
     expect([outcomeChip.minWidth, outcomeChip.minHeight]).toEqual(['64px', '48px']);
+    // all chips are the same pill shape and text size
+    const shape = (c: CSSStyleDeclaration) => [c.borderTopLeftRadius, c.fontSize];
+    expect(shape(outcomeChip)).toEqual(shape(chip));
     const current = getComputedStyle(q('#chips-grade .chip-small.current'));
     expect(current.outlineOffset).toBe('-2px');
     expect(getComputedStyle(q('#outcomeChips .chip.current')).outlineOffset).toBe('-2px');

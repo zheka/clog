@@ -366,7 +366,8 @@ Every input, outcome included, is **text first with a chip row below**.
 - The keyboard's action key is **Done**: it closes the keyboard, nothing is saved.
 - Each chip row is **one line that scrolls sideways** (it never wraps), with at most
   `maxChips` (8) chips. Every chip is at least 64px wide and 48px tall (`--chip-min-width` in
-  `style.css`; 48px is Android's recommended tap target), and a row without chips takes no space. A **fade at the edge** shows on whichever side
+  `style.css`; 48px is Android's recommended tap target). All chips share one
+  pill shape and text size; outcome chips differ only by their bold text and category colour, and a row without chips takes no space. A **fade at the edge** shows on whichever side
   has more chips to swipe to.
 
 Rules for every chip row:
