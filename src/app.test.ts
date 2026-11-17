@@ -892,9 +892,9 @@ describe('saved data that cannot be used', () => {
     });
     expect(inProblemMode()).toBe(true);
     expect(problemsShown()).toBe('attempt #1 (id a1…): unknown activity "kilterboard"');
-    // the app is not running: its buttons do nothing
+    // the app is not running: its buttons do nothing, no attempt sheet opens
     $('openModalBtn').click();
-    expect($('modalOverlay').classList.contains('active')).toBe(false);
+    expect(document.querySelector('.modal-overlay.active')).toBeNull();
     expect(document.querySelectorAll('.attempt-card')).toHaveLength(0);
   });
 

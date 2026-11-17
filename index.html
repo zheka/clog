@@ -41,66 +41,7 @@
 
       <div id="menuRoot"></div>
 
-      <div id="modalOverlay" class="modal-overlay">
-        <div class="modal-sheet">
-          <div class="modal-header">
-            <span id="modalTitle" class="modal-title">New Attempt</span>
-            <button id="closeModalBtn" class="close-btn">&times;</button>
-          </div>
-
-          <form id="attemptForm">
-            <!-- Collapsible context: activity and location -->
-            <div class="form-group">
-              <label>Context</label>
-              <div id="contextHeader" class="context-accordion-header">
-                <span id="contextSummaryText" class="context-summary"></span>
-                <svg class="group-chevron" viewBox="0 0 24 24" aria-hidden="true">
-                  <polyline points="6 9 12 15 18 9"></polyline>
-                </svg>
-              </div>
-              <div id="contextBody" class="context-collapsible-body hidden">
-                <div class="form-group">
-                  <label>Activity</label>
-                  <div class="activity-picker" id="activityPicker"></div>
-                </div>
-
-                <div class="form-group">
-                  <label for="locationInput">Location</label>
-                  <input
-                    type="text"
-                    id="locationInput"
-                    class="required-input"
-                    placeholder="add location"
-                    autocomplete="off"
-                  />
-                  <div id="locationChips" class="chips-container"></div>
-                </div>
-              </div>
-            </div>
-
-            <!-- The selected activity's own fields (from config.ts), rendered by the app -->
-            <div id="activityFields" class="activity-fields"></div>
-
-            <!-- Outcome: tapping a chip saves the attempt; typing finds or adds an outcome -->
-            <div class="form-group">
-              <label for="outcomeInput">Outcome</label>
-              <input
-                type="text"
-                id="outcomeInput"
-                placeholder="find or add an outcome"
-                autocomplete="off"
-              />
-              <div id="outcomeChips" class="outcome-row"></div>
-              <!-- Shown while a new outcome name is typed: one chip per category -->
-              <div id="newOutcomeChips" class="outcome-row new-outcome-row"></div>
-            </div>
-
-            <div class="form-actions">
-              <button type="button" id="deleteBtn" class="delete-btn">Delete</button>
-            </div>
-          </form>
-        </div>
-      </div>
+      <div id="attemptRoot"></div>
     </div>
 
     <script type="module" src="/src/main.ts"></script>

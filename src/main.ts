@@ -1,7 +1,7 @@
 import type { Attempt, Outcome } from './core/types';
 import { clearData, loadData, saveData } from './data/storage';
 import { createStore } from './store';
-import { mountAttemptModal } from './ui/attemptModal';
+import { mountAttemptModal } from './ui/AttemptSheet';
 import { mountHistoryView } from './ui/HistoryView';
 import { mountMenuModal } from './ui/MenuSheet';
 import { requestPersistentStorage, setupUpdates } from './pwa';

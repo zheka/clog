@@ -22,11 +22,22 @@ export function downloadFile(fileName: string, content: string, mimeType: string
   URL.revokeObjectURL(url);
 }
 
+/** Which sides of a sideways-scrolling row have more content to swipe to. */
+export interface ScrollFades {
+  left: boolean;
+  right: boolean;
+}
+
+export function scrollFades(row: HTMLElement): ScrollFades {
+  const more = row.scrollWidth - row.clientWidth;
+  return { left: row.scrollLeft > 1, right: more - row.scrollLeft > 1 };
+}
+
 /** Updates which sides of a sideways-scrolling row have more content (see .scroll-fade-*). */
 export function updateScrollFades(row: HTMLElement): void {
-  const more = row.scrollWidth - row.clientWidth;
-  row.classList.toggle('scroll-fade-left', row.scrollLeft > 1);
-  row.classList.toggle('scroll-fade-right', more - row.scrollLeft > 1);
+  const fades = scrollFades(row);
+  row.classList.toggle('scroll-fade-left', fades.left);
+  row.classList.toggle('scroll-fade-right', fades.right);
 }
 
 /** Keeps a row's edge fades in sync with its scrolling; call `updateScrollFades` after filling it. */
