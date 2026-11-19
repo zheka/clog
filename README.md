@@ -52,7 +52,7 @@ src/
     TwoTapButton.tsx    two-tap confirmation inside a button
     Chevron.tsx, dom.ts small shared pieces
   style.css
-  app.test.ts         UI tests: the whole app in jsdom
+  ui/*.test.ts        UI tests per screen: the whole app in jsdom (helpers in ui/test-app.ts)
   **/*.test.ts        unit tests next to the code they test
 ```
 
