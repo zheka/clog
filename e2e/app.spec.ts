@@ -48,6 +48,10 @@ test('layout on a phone: sheet at the top, one-line chip rows that scroll', asyn
   await page.goto('');
   await importBackup(page);
   await page.locator('#newAttemptBtn').click();
+  // the keyboard's action key is "Done" in every input
+  for (const input of await page.locator('#attemptSheet input[type="text"]').all()) {
+    await expect(input).toHaveJSProperty('enterKeyHint', 'done');
+  }
   const box = await page.locator('#attemptSheet .modal-sheet').boundingBox();
   expect(box!.y).toBeLessThan(10); // opens from the top
 

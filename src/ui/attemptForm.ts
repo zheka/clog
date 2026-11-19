@@ -3,6 +3,7 @@ import { config, findActivity } from '../config';
 import { cleanText } from '../core/text';
 import type { Attempt, Category } from '../core/types';
 import type { Store } from '../store';
+import { alertStorageProblem } from './dom';
 
 /** Within this time since the last attempt, a new attempt starts with the context collapsed. */
 const SAME_SESSION_MS = config.sameSessionHours * 60 * 60 * 1000;
@@ -68,6 +69,20 @@ export function createAttemptForm(store: Store) {
     editingId.value = null;
   }
 
+  /**
+   * Runs a change to the saved data. If saving fails (the store then changes nothing), says so
+   * in a popup and returns false: the sheet stays open with what was entered.
+   */
+  function saved(change: () => void, what: string): boolean {
+    try {
+      change();
+      return true;
+    } catch (err) {
+      alertStorageProblem(what, err);
+      return false;
+    }
+  }
+
   // --- actions -----------------------------------------------------------------
 
   /** New attempt, prefilled from the previous attempt. */
@@ -112,7 +127,8 @@ export function createAttemptForm(store: Store) {
       activity.value = name;
       const previous = editingId.value ? null : lastAttempt(name);
       fill(previous ?? kept);
-      if (previous) currentOutcome.value = previous.outcome;
+      // A new attempt highlights that activity's previous outcome, or none; editing keeps its own.
+      if (!editingId.value) currentOutcome.value = previous?.outcome ?? null;
     });
   }
 
@@ -138,22 +154,23 @@ export function createAttemptForm(store: Store) {
       outcome,
       fields,
     };
-    if (editingId.value) store.updateAttempt(editingId.value, input);
-    else store.addAttempt(input);
-    close();
+    const id = editingId.value;
+    const change = () => (id ? store.updateAttempt(id, input) : store.addAttempt(input));
+    if (saved(change, "Couldn't save the attempt")) close();
   }
 
   /** Creates a new outcome in `category` and logs the attempt with it. */
   function addOutcomeAndLog(name: string, category: Category) {
     if (blocked.value) return;
-    store.addOutcome({ name, category });
-    logAttempt(name);
+    if (saved(() => store.addOutcome({ name, category }), "Couldn't save the attempt")) {
+      logAttempt(name);
+    }
   }
 
   function deleteAttempt() {
-    if (!editingId.value) return;
-    store.deleteAttempt(editingId.value);
-    close();
+    const id = editingId.value;
+    if (!id) return;
+    if (saved(() => store.deleteAttempt(id), "Couldn't delete the attempt")) close();
   }
 
   return {

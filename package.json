@@ -1,7 +1,6 @@
 {
   "name": "clog",
   "private": true,
-  "version": "1.2.0",
   "description": "Climbing LOGger",
   "type": "module",
   "engines": {

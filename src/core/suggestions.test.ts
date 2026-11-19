@@ -60,8 +60,8 @@ describe('rankByQuery', () => {
 describe('suggestValues', () => {
   it('always fills the row: matches first, then backfill, up to the limit', () => {
     const attempts = ['5', '6', '7', '8'].map((grade) => makeAttempt({ grade }));
-    expect(suggestValues(attempts, 'grade', '', here)).toEqual(['8', '7', '6']);
-    expect(suggestValues(attempts, 'grade', '5', here)).toEqual(['5', '8', '7']);
+    expect(suggestValues(attempts, 'grade', '', here, null, 3)).toEqual(['8', '7', '6']);
+    expect(suggestValues(attempts, 'grade', '5', here, null, 3)).toEqual(['5', '8', '7']);
     expect(suggestValues(attempts, 'grade', 'x', here, null, 2)).toEqual(['8', '7']);
   });
 });
@@ -91,6 +91,6 @@ describe('outcomes', () => {
   it('while typing, only the matching ones (no backfill), up to the limit', () => {
     expect(suggestOutcomes(attempts, outcomes, 'boulder', 'f', 3)).toEqual(['flash', 'fell']);
     expect(suggestOutcomes(attempts, outcomes, 'boulder', 'f', 1)).toEqual(['flash']);
-    expect(suggestOutcomes(attempts, outcomes, 'boulder', 'xyz')).toEqual([]);
+    expect(suggestOutcomes(attempts, outcomes, 'boulder', 'xyz', 8)).toEqual([]);
   });
 });

@@ -1,3 +1,13 @@
+/**
+ * A popup for when the browser's storage fails (full, or blocked for this site): something the
+ * app can't fix itself. `what` says what didn't happen, e.g. "Couldn't save the attempt".
+ */
+export function alertStorageProblem(what: string, err: unknown): void {
+  // A DOMException (e.g. QuotaExceededError) has a message but isn't always an Error.
+  const reason = (err as { message?: unknown } | null)?.message ?? String(err);
+  alert(`${what}: ${reason}\n\nThe browser's storage may be full, or blocked for this site.`);
+}
+
 /** Triggers a browser download of a text file. */
 export function downloadFile(fileName: string, content: string, mimeType: string): void {
   const blob = new Blob([content], { type: mimeType });

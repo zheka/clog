@@ -1,13 +1,21 @@
 import type { Attempt } from './types';
 
 export interface Session {
+  /** Activity, location and local date (with the year): what makes a session. */
   key: string;
   location: string;
   activity: string;
-  /** Short local date, e.g. "Nov 15". */
+  /** Short local date for display, without the year, e.g. "Nov 15". */
   dateString: string;
   /** Newest first. */
   attempts: Attempt[];
+}
+
+/** Local calendar date with the year, e.g. "2026-11-15". */
+export function localDay(iso: string): string {
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
 export function formatDay(iso: string): string {
@@ -24,13 +32,11 @@ export function groupIntoSessions(attempts: Attempt[]): Session[] {
   let current: Session | null = null;
 
   for (const attempt of [...attempts].reverse()) {
-    const location = attempt.location;
-    const activity = attempt.activity;
-    const dateString = formatDay(attempt.loggedAt);
-    const key = `${activity}___${location}___${dateString}`;
+    const { activity, location, loggedAt } = attempt;
+    const key = JSON.stringify([activity, location, localDay(loggedAt)]);
 
     if (!current || current.key !== key) {
-      current = { key, activity, location, dateString, attempts: [] };
+      current = { key, activity, location, dateString: formatDay(loggedAt), attempts: [] };
       sessions.push(current);
     }
     current.attempts.push(attempt);

@@ -30,9 +30,9 @@ describe('store', () => {
       grade: 'v5',
       outcome: 'flash',
     });
-    expect(store.getState().attempts).toEqual([added]);
-    expect(save).toHaveBeenCalledWith(store.getState());
-    expect(listener).toHaveBeenCalledWith(store.getState(), { attempts: [], outcomes: [] });
+    expect(store.state.value.attempts).toEqual([added]);
+    expect(save).toHaveBeenCalledWith(store.state.value);
+    expect(listener).toHaveBeenCalledWith(store.state.value, { attempts: [], outcomes: [] });
   });
 
   it('stores the activity fields it is given', () => {
@@ -50,7 +50,7 @@ describe('store', () => {
     const b = makeAttempt();
     const { store } = setup({ attempts: [a, b] });
     store.updateAttempt(a.id, { ...input, activity: 'route' });
-    const [updated, other] = store.getState().attempts;
+    const [updated, other] = store.state.value.attempts;
     expect(updated).toEqual({
       id: a.id,
       loggedAt: a.loggedAt,
@@ -67,27 +67,25 @@ describe('store', () => {
     const [a, b] = [makeAttempt(), makeAttempt()];
     const { store } = setup({ attempts: [a, b] });
     store.deleteAttempt(a.id);
-    expect(store.getState().attempts).toEqual([b]);
+    expect(store.state.value.attempts).toEqual([b]);
   });
 
   it('adds an outcome once, without touching attempts', () => {
     const { store, listener } = setup({ outcomes: [{ name: 'flash', category: 'success' }] });
-    const attemptsBefore = store.getState().attempts;
+    const attemptsBefore = store.state.value.attempts;
     store.addOutcome({ name: 'flash', category: 'failure' });
     expect(listener).not.toHaveBeenCalled();
     store.addOutcome({ name: 'fell', category: 'failure' });
-    expect(store.getState().outcomes.map((o) => o.name)).toEqual(['flash', 'fell']);
-    expect(store.getState().attempts).toBe(attemptsBefore);
+    expect(store.state.value.outcomes.map((o) => o.name)).toEqual(['flash', 'fell']);
+    expect(store.state.value.attempts).toBe(attemptsBefore);
   });
 
-  it('replaces everything, keeping outcomes when none are given', () => {
+  it('replaces everything', () => {
     const outcomes = [{ name: 'flash', category: 'success' as const }];
     const { store } = setup({ attempts: [makeAttempt()], outcomes });
-    const imported = [makeAttempt()];
-    store.replaceAll(imported, null);
-    expect(store.getState()).toEqual({ attempts: imported, outcomes });
-    store.replaceAll([], []);
-    expect(store.getState()).toEqual({ attempts: [], outcomes: [] });
+    const imported = { attempts: [makeAttempt()], outcomes: [] };
+    store.replaceAll(imported);
+    expect(store.state.value).toEqual(imported);
   });
 
   it('stops notifying after unsubscribe', () => {

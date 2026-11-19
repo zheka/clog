@@ -68,8 +68,8 @@ export function suggestValues(
   field: string,
   query: string,
   scope: Scope,
-  excludeId: string | null = null,
-  limit = 3,
+  excludeId: string | null,
+  limit: number,
 ): string[] {
   return rankByQuery(fieldCandidates(attempts, field, scope, excludeId), query).slice(0, limit);
 }
@@ -99,7 +99,7 @@ export function suggestOutcomes(
   outcomes: Outcome[],
   activity: string,
   query: string,
-  limit = 8,
+  limit: number,
 ): string[] {
   const candidates = outcomeCandidates(attempts, outcomes, activity);
   return rankByQuery(candidates, query, false).slice(0, limit);

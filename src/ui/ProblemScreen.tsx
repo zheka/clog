@@ -1,6 +1,6 @@
 import { signal } from '@preact/signals';
 import { useLayoutEffect } from 'preact/hooks';
-import { downloadFile } from './dom';
+import { alertStorageProblem, downloadFile } from './dom';
 import { TwoTapButton } from './TwoTapButton';
 
 interface Problem {
@@ -58,9 +58,13 @@ export function ProblemScreen() {
         label="Start fresh"
         confirmLabel="Tap again to delete saved data"
         onConfirm={() => {
-          const startFresh = problem?.onStartFresh;
-          current.value = null;
-          startFresh?.();
+          if (!problem) return;
+          try {
+            problem.onStartFresh();
+            current.value = null;
+          } catch (err) {
+            alertStorageProblem("Couldn't delete the saved data", err);
+          }
         }}
       />
     </section>

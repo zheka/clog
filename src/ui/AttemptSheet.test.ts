@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /** UI tests: The new/edit attempt sheet: prefill, chips, logging, outcomes, editing and deleting. */
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   NOW,
   q,
@@ -178,6 +178,26 @@ describe('new attempt sheet', () => {
     expect($<HTMLInputElement>('field-grade').value).toBe('v5');
   });
 
+  it('highlights the outcome of the selected activity’s previous attempt, or none', async () => {
+    await start([
+      attempt({ id: 'k', activity: 'kilter', angle: '40', outcome: 'fell' }),
+      attempt({ id: 'b', outcome: 'flash', loggedAt: '2026-11-14T12:01:00Z' }),
+    ]);
+    const current = () => texts('#outcomeChips .chip.current');
+    $('newAttemptBtn').click();
+    expect(current()).toEqual(['flash']);
+    q('.activity-tab[data-activity="kilter"]').click();
+    expect(current()).toEqual(['fell']);
+    q('.activity-tab[data-activity="route"]').click();
+    expect(current()).toEqual([]);
+    // editing keeps the attempt's own outcome highlighted
+    $('closeAttemptSheetBtn').click();
+    expandAll();
+    q('.attempt-card[data-attempt-id="k"] .edit-btn').click();
+    q('.activity-tab[data-activity="route"]').click();
+    expect(current()).toEqual(['fell']);
+  });
+
   it('shows outcome chips by recency, then unused outcomes from the list, max 8', async () => {
     const outcomes = 'abcdefghij'.split('').map((name) => ({ name, category: 'success' }));
     await start([attempt({ id: '1', outcome: 'c' }), attempt({ id: '2', outcome: 'e' })], outcomes);
@@ -198,6 +218,30 @@ describe('new attempt sheet', () => {
 });
 
 describe('logging attempts', () => {
+  it('says so in a popup when saving fails, and keeps the sheet open', async () => {
+    await start([attempt()]);
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new DOMException('The quota has been exceeded.', 'QuotaExceededError');
+    });
+    $('newAttemptBtn').click();
+    type('field-grade', 'v5');
+    clickChip('outcomeChips', 'flash');
+    expect(alertMock).toHaveBeenCalledTimes(1);
+    expect(alertMock.mock.calls[0][0]).toMatch(
+      /^Couldn't save the attempt: The quota has been exceeded\.\n\nThe browser's storage may be full/,
+    );
+    expect($('attemptSheet').classList.contains('active')).toBe(true);
+    expect($<HTMLInputElement>('field-grade').value).toBe('v5');
+    expect(stored().map((a) => a.id)).toEqual(['a1']);
+    expect(document.querySelectorAll('.group-container')).toHaveLength(1);
+
+    // a new outcome isn't kept either
+    type('outcomeInput', 'crimped');
+    q('#newOutcomeChips .chip').click();
+    expect(alertMock).toHaveBeenCalledTimes(2);
+    expect(q('#newOutcomeChips .chip').textContent).toContain('crimped');
+  });
+
   it('logs a new attempt when an outcome chip is clicked', async () => {
     await start([attempt({ activity: 'kilter', angle: '40' })]);
     $('newAttemptBtn').click();
@@ -414,7 +458,7 @@ describe('keyboard', () => {
     $('newAttemptBtn').click();
     for (const id of ['locationInput', 'field-angle', 'field-grade', 'outcomeInput']) {
       const input = $<HTMLInputElement>(id);
-      expect(input.enterKeyHint).toBe('done');
+      expect(input.getAttribute('enterkeyhint')).toBe('done');
       input.focus();
       expect(document.activeElement).toBe(input);
       input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', cancelable: true }));
@@ -505,6 +549,19 @@ describe('editing and deleting', () => {
     expect(confirmMock).not.toHaveBeenCalled();
     expect(stored().map((a) => a.id)).toEqual(['a1']);
     expect($('attemptSheet').classList.contains('active')).toBe(false);
+  });
+
+  it('says so in a popup when deleting fails, and keeps the attempt', async () => {
+    await start(data());
+    edit('a2');
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('blocked');
+    });
+    $('deleteBtn').click();
+    $('deleteBtn').click();
+    expect(alertMock.mock.calls[0][0]).toMatch(/^Couldn't delete the attempt: blocked/);
+    expect(stored().map((a) => a.id)).toEqual(['a1', 'a2']);
+    expect($('attemptSheet').classList.contains('active')).toBe(true);
   });
 
   it('resets the delete button when the sheet closes', async () => {

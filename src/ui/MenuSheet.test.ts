@@ -179,15 +179,15 @@ describe('backup menu', () => {
       expect(stored().map((a) => a.id)).toEqual(['a1']);
     });
 
-    it('rejects files without attempts', async () => {
+    it('imports a valid file without attempts (e.g. only outcomes)', async () => {
       await start([attempt()]);
-      importFile(JSON.stringify({ ...backup, attempts: [] }));
+      const outcomes = [{ name: 'send', category: 'success' }];
+      importFile(JSON.stringify({ ...backup, outcomes, attempts: [] }));
       await vi.waitFor(() =>
-        expect(alertMock).toHaveBeenCalledWith(
-          'No valid climbing attempts found in the selected file.',
-        ),
+        expect(alertMock).toHaveBeenCalledWith('Successfully imported 0 attempts.'),
       );
-      expect(stored().map((a) => a.id)).toEqual(['a1']);
+      expect(stored()).toEqual([]);
+      expect(storedOutcomes()).toEqual(outcomes);
     });
 
     it('reports invalid JSON', async () => {

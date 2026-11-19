@@ -30,4 +30,12 @@ describe('groupIntoSessions', () => {
     ];
     expect(groupIntoSessions(attempts).map((s) => s.location)).toEqual(['A', 'B', 'A']);
   });
+
+  it('keeps the same day of different years apart, though both show "Nov 14"', () => {
+    const lastYear = makeAttempt({ loggedAt: '2025-11-14T12:00:00Z' });
+    const thisYear = makeAttempt({ loggedAt: '2026-11-14T12:00:00Z' });
+    const sessions = groupIntoSessions([lastYear, thisYear]);
+    expect(sessions.map((s) => s.attempts)).toEqual([[thisYear], [lastYear]]);
+    expect(sessions[0].dateString).toBe(sessions[1].dateString);
+  });
 });

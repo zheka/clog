@@ -1,7 +1,17 @@
 // @vitest-environment jsdom
 /** UI tests: Saved data that cannot be used: the problem screen. */
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { q, $, stored, type, attempt, OUTCOMES, start, useAppTestSetup } from './test-app';
+import {
+  q,
+  $,
+  stored,
+  type,
+  attempt,
+  OUTCOMES,
+  alertMock,
+  start,
+  useAppTestSetup,
+} from './test-app';
 
 useAppTestSetup();
 
@@ -55,6 +65,33 @@ describe('saved data that cannot be used', () => {
     $('startFreshBtn').click();
     expect(visible('problemScreen')).toBe(false);
     expect(visible('mainContent')).toBe(true);
+  });
+
+  it('says so in a popup when storage cannot be read, and does not start', async () => {
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new DOMException('Access is denied.', 'SecurityError');
+    });
+    await start([attempt()]);
+    expect(alertMock).toHaveBeenCalledTimes(1);
+    expect(alertMock.mock.calls[0][0]).toMatch(
+      /^Can't read the saved data, so the app can't start: Access is denied\./,
+    );
+    expect($('problemScreen').hidden).toBe(true);
+    $('newAttemptBtn').click();
+    expect(document.querySelector('.modal-overlay.active')).toBeNull();
+    expect($('historyList')).toBeNull();
+  });
+
+  it('keeps the problem screen when the saved data cannot be deleted', async () => {
+    await start(undefined, null, { clog: '{oops' });
+    vi.spyOn(Storage.prototype, 'removeItem').mockImplementation(() => {
+      throw new Error('blocked');
+    });
+    $('startFreshBtn').click();
+    $('startFreshBtn').click();
+    expect(alertMock.mock.calls[0][0]).toMatch(/^Couldn't delete the saved data: blocked/);
+    expect(inProblemMode()).toBe(true);
+    expect($('historyList')).toBeNull();
   });
 
   it('downloads the saved data unchanged and keeps it', async () => {

@@ -1,5 +1,3 @@
-import { useLayoutEffect, useRef } from 'preact/hooks';
-
 interface Props {
   id: string;
   class?: string;
@@ -10,14 +8,10 @@ interface Props {
 
 /** A text input whose keyboard action key is "Done": it closes the keyboard, saves nothing. */
 export function DoneInput(props: Props) {
-  const ref = useRef<HTMLInputElement>(null);
-  useLayoutEffect(() => {
-    ref.current!.enterKeyHint = 'done';
-  }, []);
   return (
     <input
-      ref={ref}
       type="text"
+      enterKeyHint="done"
       id={props.id}
       class={props.class}
       placeholder={props.placeholder}

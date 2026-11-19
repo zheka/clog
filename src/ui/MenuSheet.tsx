@@ -25,7 +25,7 @@ export function createMenuSheet(store: Store, updates: Updates) {
     const close = () => (open.value = false);
 
     function exportBackup() {
-      const { attempts, outcomes } = store.getState();
+      const { attempts, outcomes } = store.state.peek();
       if (attempts.length === 0) {
         alert('No attempts to export.');
         return;
@@ -37,11 +37,7 @@ export function createMenuSheet(store: Store, updates: Updates) {
 
     function importBackup(text: string) {
       const backup = parseBackup(text);
-      if (backup.attempts.length === 0) {
-        alert('No valid climbing attempts found in the selected file.');
-        return;
-      }
-      const existing = store.getState().attempts.length;
+      const existing = store.state.peek().attempts.length;
       if (
         existing > 0 &&
         !confirm(
@@ -50,7 +46,7 @@ export function createMenuSheet(store: Store, updates: Updates) {
       ) {
         return;
       }
-      store.replaceAll(backup.attempts, backup.outcomes);
+      store.replaceAll(backup);
       // The data is now saved under the new key, so the pre-0.1.0 copy is no longer needed.
       removeLegacyData();
       close();

@@ -266,8 +266,11 @@ mistake: fix and deploy) or reset and keep logging.
 ### Saving and deleting
 
 - **All fields are required.** An empty field shows a red hint ("add grade"), which is never
-  part of the value. While any field is empty, the outcome chips are faded and inactive. The
-  form shows no popups.
+  part of the value. While any field is empty, the outcome chips are faded and inactive.
+- **Popups only for what the app can't fix:** when the browser's storage fails (full, or
+  blocked for the site). Saving or deleting then changes nothing and the sheet stays open with
+  what was entered. If the storage can't be read at start, the app doesn't start (so it can't
+  overwrite data that is only unreadable for now); a reload after allowing storage starts it.
 - **Editing keeps fields the form doesn't show** (defined but not listed for the activity).
   Fields the previous activity listed and the new one doesn't are dropped (kilter → boulder
   drops the angle).
@@ -276,10 +279,11 @@ mistake: fix and deploy) or reset and keep logging.
 
 ## History view
 
-- Groups **consecutive** attempts by **activity + location + local date**. Boulders and the
-  board on the same day appear as two groups.
+- Groups **consecutive** attempts by **activity + location + local date** (with the year:
+  Nov 15 of two years are two groups). Boulders and the board on the same day appear as two
+  groups.
 - A group is a **frame** with a header `Nov 15 • route • TK` (date, activity, location, in the
-  form's order, names as stored) and a chevron. Cards show the time, each field the activity
+  form's order, names as stored; the date shown without the year) and a chevron. Cards show the time, each field the activity
   lists as a badge, and the outcome badge in its category colour.
 - Only the newest group starts expanded; groups reset to that whenever attempts change. A
   collapsed group builds no cards. Expanding is instant.
@@ -287,12 +291,12 @@ mistake: fix and deploy) or reset and keep logging.
 ## Backup menu
 
 Export (JSON), import (JSON) and **App Version**, which shows the build and can check for and
-install an update. Import and export still report with the browser's `alert`/`confirm`.
+install an update. Import and export report with the browser's `alert`/`confirm`, kept for
+events the app can't fix itself. A valid backup without attempts (e.g. only outcomes) can be
+imported.
 
 ## Planned
 
-- **Messages in the menu** instead of `alert`/`confirm`, with a two-tap import confirmation
-  showing what the file contains ("Replace my 118 attempts" → "Tap again to replace").
 - **Backup scripts** (`npm run backup -- check | upgrade | rename-outcome | merge`), reusing the
   app's own validation, when first needed.
 - **CSV export for analysis**, one-way, with outcomes expanded (`fell`, `failure`).

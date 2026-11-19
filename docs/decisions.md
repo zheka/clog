@@ -131,3 +131,15 @@ views, the attempt sheet split into form state (`attemptForm.ts`) and small comp
 
 **Testing:** real-browser tests with Playwright on the production build; Testing Library was
 discussed and not adopted for now.
+
+## 2026-11-19 · Final audit
+
+- **Storage failures get a popup** (saving, deleting, reading at start, starting fresh): the
+  one kind of problem the app can't fix itself. At start, the app then doesn't run at all
+  rather than start empty and risk overwriting data that is only unreadable for now.
+- **Popups stay for fatal events**; replacing the menu's `alert`/`confirm` with inline
+  messages was dropped.
+- **Sessions are keyed by the full local date**; the header still shows it without the year.
+- **Empty backups import** (a valid file with only outcomes).
+- Switching to an activity with no previous attempt highlights no outcome (editing keeps the
+  attempt's own).

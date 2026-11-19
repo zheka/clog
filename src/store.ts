@@ -18,7 +18,6 @@ export type Listener = (state: State, prev: State) => void;
 export interface Store {
   /** The current state; components that read it update when it changes. */
   readonly state: ReadonlySignal<State>;
-  getState(): State;
   /** Calls `listener` after every change. Returns a function that unsubscribes. */
   subscribe(listener: Listener): () => void;
   addAttempt(input: AttemptInput): Attempt;
@@ -26,8 +25,8 @@ export interface Store {
   deleteAttempt(id: string): void;
   /** Registers an outcome unless one with the same (normalised) name exists. */
   addOutcome(outcome: Outcome): void;
-  /** Replaces all attempts, and the outcomes too unless `outcomes` is null. */
-  replaceAll(attempts: Attempt[], outcomes: Outcome[] | null): void;
+  /** Replaces everything (an imported backup). */
+  replaceAll(state: State): void;
 }
 
 export function createStore(initial: State, save: (state: State) => void): Store {
@@ -44,7 +43,6 @@ export function createStore(initial: State, save: (state: State) => void): Store
 
   return {
     state: current,
-    getState: () => current.peek(),
 
     subscribe(listener) {
       listeners.add(listener);
@@ -77,8 +75,8 @@ export function createStore(initial: State, save: (state: State) => void): Store
       setState({ ...state, outcomes: [...state.outcomes, outcome] });
     },
 
-    replaceAll(attempts, outcomes) {
-      setState({ attempts, outcomes: outcomes ?? current.peek().outcomes });
+    replaceAll(state) {
+      setState(state);
     },
   };
 }
