@@ -56,7 +56,8 @@ src/
   **/*.test.ts        unit tests next to the code they test
 ```
 
-See docs/design.md for the data model and decisions.
+See [docs/design.md](docs/design.md) for how the app works and
+[docs/decisions.md](docs/decisions.md) for why.
 
 Data flows one way: UI event → store action → new state → saved → views that read it update.
 
