@@ -269,7 +269,7 @@ export function createAttemptSheet(store: Store) {
     const location = (values.value.location ?? '').trim() || 'Unknown Location';
     return (
       <div
-        id="modalOverlay"
+        id="attemptSheet"
         class={isOpen.value ? 'modal-overlay active' : 'modal-overlay'}
         onClick={(e) => {
           if (e.target === e.currentTarget) close();
@@ -277,10 +277,10 @@ export function createAttemptSheet(store: Store) {
       >
         <div class="modal-sheet">
           <div class="modal-header">
-            <span id="modalTitle" class="modal-title">
+            <span id="attemptSheetTitle" class="modal-title">
               {editing ? 'Edit Attempt' : 'New Attempt'}
             </span>
-            <button id="closeModalBtn" class="close-btn" onClick={close}>
+            <button id="closeAttemptSheetBtn" class="close-btn" onClick={close}>
               &times;
             </button>
           </div>

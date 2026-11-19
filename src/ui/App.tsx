@@ -38,7 +38,7 @@ export function App({ views }: { views: Signal<Views | null> }) {
       <main id="mainContent">{app && <app.HistoryView />}</main>
 
       <button
-        id="openModalBtn"
+        id="newAttemptBtn"
         class="fab"
         aria-label="New Attempt"
         onClick={() => app?.openNewAttempt()}

@@ -24,7 +24,7 @@ export function groupIntoSessions(attempts: Attempt[]): Session[] {
   let current: Session | null = null;
 
   for (const attempt of [...attempts].reverse()) {
-    const location = attempt.location || 'Unknown Location';
+    const location = attempt.location;
     const activity = attempt.activity;
     const dateString = formatDay(attempt.loggedAt);
     const key = `${activity}___${location}___${dateString}`;

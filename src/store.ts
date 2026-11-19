@@ -21,7 +21,7 @@ export interface Store {
   addAttempt(input: AttemptInput): Attempt;
   updateAttempt(id: string, input: AttemptInput): void;
   deleteAttempt(id: string): void;
-  /** Registers an outcome unless one with the same name (any case) exists. */
+  /** Registers an outcome unless one with the same (normalised) name exists. */
   addOutcome(outcome: Outcome): void;
   /** Replaces all attempts, and the outcomes too unless `outcomes` is null. */
   replaceAll(attempts: Attempt[], outcomes: Outcome[] | null): void;
@@ -64,8 +64,7 @@ export function createStore(initial: State, save: (state: State) => void): Store
     },
 
     addOutcome(outcome) {
-      const name = outcome.name.toLowerCase();
-      if (state.outcomes.some((o) => o.name.toLowerCase() === name)) return;
+      if (state.outcomes.some((o) => o.name === outcome.name)) return;
       setState({ ...state, outcomes: [...state.outcomes, outcome] });
     },
 

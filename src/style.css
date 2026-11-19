@@ -209,7 +209,7 @@ main {
   font-variant-numeric: tabular-nums;
 }
 
-.grade-badge {
+.field-badge {
   background: var(--input-bg);
   padding: 2px 8px;
   border-radius: 6px;
@@ -225,17 +225,17 @@ main {
   border-radius: 6px;
 }
 
-.attempt-status-green {
+.attempt-status-success {
   background: rgba(16, 185, 129, 0.15);
   color: var(--success);
 }
 
-.attempt-status-red {
+.attempt-status-failure {
   background: rgba(239, 68, 68, 0.15);
   color: var(--failure);
 }
 
-.attempt-status-gray {
+.attempt-status-work {
   background: rgba(107, 114, 128, 0.15);
   color: var(--work);
 }
@@ -260,23 +260,6 @@ main {
 .edit-btn:hover {
   border-color: var(--primary);
   color: var(--primary);
-}
-
-.attempt-details-row {
-  display: flex;
-  gap: 8px;
-  font-size: 0.78rem;
-  color: var(--text-muted);
-  padding-top: 4px;
-  border-top: 1px dashed rgba(63, 63, 78, 0.5);
-}
-
-.detail-tag {
-  background: var(--input-bg);
-  padding: 2px 6px;
-  border-radius: 4px;
-  border: 1px solid var(--border);
-  color: var(--text);
 }
 
 /* Floating Add Button */

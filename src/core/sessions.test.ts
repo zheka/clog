@@ -30,8 +30,4 @@ describe('groupIntoSessions', () => {
     ];
     expect(groupIntoSessions(attempts).map((s) => s.location)).toEqual(['A', 'B', 'A']);
   });
-
-  it('labels attempts without a location as "Unknown Location"', () => {
-    expect(groupIntoSessions([makeAttempt({ location: '' })])[0].location).toBe('Unknown Location');
-  });
 });

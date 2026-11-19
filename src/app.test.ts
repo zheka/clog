@@ -20,6 +20,13 @@ function q<T extends HTMLElement = HTMLElement>(sel: string, root: ParentNode = 
   return el;
 }
 
+/** Expands every collapsed history group (collapsed groups build no cards). */
+function expandAll() {
+  for (const header of document.querySelectorAll<HTMLElement>('.collapsed .group-header')) {
+    header.click();
+  }
+}
+
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 const texts = (sel: string) => [...document.querySelectorAll(sel)].map((e) => e.textContent.trim());
 const storedData = () => JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}');
@@ -134,13 +141,15 @@ describe('loading and history list', () => {
     expect(q('.group-header', groups[1]).textContent).toContain('route • B');
     // expanding is instant and has no height limit (a long session is shown in full)
     const body = (g: Element) => getComputedStyle(q('.group-body', g));
-    expect([body(groups[0]).display, body(groups[1]).display]).toEqual(['flex', 'none']);
+    expect(body(groups[0]).display).toBe('flex');
     expect(body(groups[0]).maxHeight).toMatch(/^(none|)$/);
     expect(body(groups[0]).transitionProperty).toMatch(/^(all|)$/); // no transition set
+    // a collapsed group builds no cards
+    expect(groups[1].querySelector('.group-body')).toBeNull();
     // each session is a frame, 8px apart; attempts inside are borderless
     expect(getComputedStyle($('historyList')).rowGap).toBe('8px');
     expect(getComputedStyle(groups[0]).borderTopStyle).toBe('solid');
-    expect(getComputedStyle(q('.attempt-card', groups[2])).borderTopStyle).toMatch(/^(none|)$/);
+    expect(getComputedStyle(q('.attempt-card', groups[0])).borderTopStyle).toMatch(/^(none|)$/);
     // names shown exactly as stored: no forced capitals (activities lowercase, locations as typed)
     expect(getComputedStyle(q('.group-header', groups[0])).textTransform).toMatch(/^(none|)$/);
     // header: starts with the date (no icon before it), in the normal text colour
@@ -155,14 +164,14 @@ describe('loading and history list', () => {
     const formChevron = getComputedStyle(q('#contextHeader .group-chevron'));
     expect([chevron.fill, chevron.color]).toEqual([formChevron.fill, formChevron.color]);
     expect(chevron.fill).toBe('none');
-    expect([...groups[2].querySelectorAll('.grade-badge')].map((e) => e.textContent)).toEqual([
+    // only the newest group starts expanded; header click toggles and builds the cards
+    expect(groups.map((g) => g.classList.contains('collapsed'))).toEqual([false, true, true]);
+    q('.group-header', groups[2]).click();
+    expect(groups[2].classList.contains('collapsed')).toBe(false);
+    expect([...groups[2].querySelectorAll('.field-badge')].map((e) => e.textContent)).toEqual([
       'v2',
       'v1',
     ]);
-    // only the newest group starts expanded; header click toggles
-    expect(groups.map((g) => g.classList.contains('collapsed'))).toEqual([false, true, true]);
-    q('.group-header', groups[1]).click();
-    expect(groups[1].classList.contains('collapsed')).toBe(false);
   });
 
   it('renders time, activity fields as badges, and outcome badge colour by category', async () => {
@@ -178,12 +187,13 @@ describe('loading and history list', () => {
         loggedAt: '2026-11-14T12:04:00Z',
       }),
     ]);
+    expandAll();
     const badge = (id: string) => q(`[data-attempt-id="${id}"] .attempt-status-badge`).className;
-    expect(badge('s')).toContain('attempt-status-green');
-    expect(badge('f')).toContain('attempt-status-red');
-    expect(badge('k')).toContain('attempt-status-gray');
+    expect(badge('s')).toContain('attempt-status-success');
+    expect(badge('f')).toContain('attempt-status-failure');
+    expect(badge('k')).toContain('attempt-status-work');
     // every field the activity lists, as a badge in config order; no tags
-    expect(texts('[data-attempt-id="kb"] .grade-badge')).toEqual(['40', 'v4']);
+    expect(texts('[data-attempt-id="kb"] .field-badge')).toEqual(['40', 'v4']);
     expect(document.querySelector('.detail-tag')).toBeNull();
     const time = new Date('2026-11-14T12:00:00Z').toLocaleTimeString(undefined, {
       hour: '2-digit',
@@ -195,7 +205,7 @@ describe('loading and history list', () => {
 
   it('escapes HTML in user text', async () => {
     await start([attempt({ grade: '<b>v4</b>' })]);
-    expect(q('.grade-badge').innerHTML).toBe('&lt;b&gt;v4&lt;/b&gt;');
+    expect(q('.field-badge').innerHTML).toBe('&lt;b&gt;v4&lt;/b&gt;');
   });
 });
 
@@ -212,9 +222,9 @@ describe('new attempt sheet', () => {
         loggedAt: '2026-11-15T11:00:00Z',
       }),
     ]);
-    $('openModalBtn').click();
-    expect($('modalOverlay').classList.contains('active')).toBe(true);
-    expect($('modalTitle').textContent).toBe('New Attempt');
+    $('newAttemptBtn').click();
+    expect($('attemptSheet').classList.contains('active')).toBe(true);
+    expect($('attemptSheetTitle').textContent).toBe('New Attempt');
     expect($('deleteBtn').style.display).toBe('none');
     expect($<HTMLInputElement>('locationInput').value).toBe('BW Ost');
     expect($<HTMLInputElement>('field-grade').value).toBe('v5');
@@ -228,16 +238,16 @@ describe('new attempt sheet', () => {
 
   it('expands context when the last attempt is older than 4 hours, or with no history', async () => {
     await start([attempt({ loggedAt: '2026-11-15T08:01:00Z' })]);
-    $('openModalBtn').click();
+    $('newAttemptBtn').click();
     expect($('contextBody').classList.contains('hidden')).toBe(true); // 3h59m: same session
 
     await start([attempt({ loggedAt: '2026-11-15T07:59:00Z' })]);
-    $('openModalBtn').click();
+    $('newAttemptBtn').click();
     expect($('contextBody').classList.contains('hidden')).toBe(false);
     expect($('contextHeader').getAttribute('aria-expanded')).toBe('true');
 
     await start(undefined);
-    $('openModalBtn').click();
+    $('newAttemptBtn').click();
     expect($('contextBody').classList.contains('hidden')).toBe(false);
     expect($<HTMLInputElement>('locationInput').value).toBe('');
     expect($('contextSummaryText').textContent).toBe('boulder • Unknown Location');
@@ -245,7 +255,7 @@ describe('new attempt sheet', () => {
 
   it('shows one tab per configured activity, and the fields of the selected activity', async () => {
     await start([attempt()]);
-    $('openModalBtn').click();
+    $('newAttemptBtn').click();
     expect(texts('.activity-tab')).toEqual(['boulder', 'route', 'kilter']);
     expect(getComputedStyle(q('.activity-tab')).textTransform).toMatch(/^(none|)$/);
     expect(q('.activity-tab.active').dataset.activity).toBe('boulder');
@@ -256,7 +266,7 @@ describe('new attempt sheet', () => {
 
   it('toggles the context section and updates its summary while typing', async () => {
     await start([attempt({ loggedAt: '2026-11-15T11:30:00Z' })]);
-    $('openModalBtn').click();
+    $('newAttemptBtn').click();
     $('contextHeader').click();
     expect($('contextBody').classList.contains('hidden')).toBe(false);
     expect($('contextHeader').getAttribute('aria-expanded')).toBe('true');
@@ -268,12 +278,12 @@ describe('new attempt sheet', () => {
 
   it('closes via the close button and the overlay without saving', async () => {
     await start([attempt()]);
-    $('openModalBtn').click();
-    $('closeModalBtn').click();
-    expect($('modalOverlay').classList.contains('active')).toBe(false);
-    $('openModalBtn').click();
-    $('modalOverlay').click();
-    expect($('modalOverlay').classList.contains('active')).toBe(false);
+    $('newAttemptBtn').click();
+    $('closeAttemptSheetBtn').click();
+    expect($('attemptSheet').classList.contains('active')).toBe(false);
+    $('newAttemptBtn').click();
+    $('attemptSheet').click();
+    expect($('attemptSheet').classList.contains('active')).toBe(false);
     expect(stored()).toHaveLength(1);
   });
 
@@ -284,7 +294,7 @@ describe('new attempt sheet', () => {
         attempt({ id: `a${i}`, location, loggedAt: `2026-11-1${i}T12:00:00Z` }),
       ),
     );
-    $('openModalBtn').click();
+    $('newAttemptBtn').click();
     expect(texts('#locationChips .chip-small')).toEqual([
       'Gym9',
       'Gym8',
@@ -317,7 +327,7 @@ describe('new attempt sheet', () => {
       attempt({ id: 's', location: 'Seoul', grade: '8', loggedAt: '2026-11-14T12:01:00Z' }),
       attempt({ id: 'b', location: 'BW Ost', grade: '6', loggedAt: '2026-11-14T12:02:00Z' }),
     ]);
-    $('openModalBtn').click();
+    $('newAttemptBtn').click();
     expect(texts('#chips-grade .chip-small')).toEqual(['6', '8', '7-']);
     // the prefilled value doesn't filter, and is highlighted
     expect(q('#chips-grade .chip-small.current').textContent).toBe('6');
@@ -334,7 +344,7 @@ describe('new attempt sheet', () => {
       attempt({ id: 'k1', activity: 'kilter', angle: '45' }),
       attempt({ id: 'k2', activity: 'kilter', angle: '40', loggedAt: '2026-11-14T12:01:00Z' }),
     ]);
-    $('openModalBtn').click();
+    $('newAttemptBtn').click();
     expect(texts('#chips-angle .chip-small')).toEqual(['40', '45']);
     clickChip('chips-angle', '45');
     expect($<HTMLInputElement>('field-angle').value).toBe('45');
@@ -345,7 +355,7 @@ describe('new attempt sheet', () => {
       attempt({ id: 'k', activity: 'kilter', location: 'Home', angle: '40', grade: 'v5' }),
       attempt({ id: 'b', location: 'BW Ost', grade: '6', loggedAt: '2026-11-14T12:01:00Z' }),
     ]);
-    $('openModalBtn').click();
+    $('newAttemptBtn').click();
     q('.activity-tab[data-activity="kilter"]').click();
     expect($<HTMLInputElement>('locationInput').value).toBe('Home');
     expect($<HTMLInputElement>('field-angle').value).toBe('40');
@@ -359,7 +369,7 @@ describe('new attempt sheet', () => {
   it('shows outcome chips by recency, then unused outcomes from the list, max 8', async () => {
     const outcomes = 'abcdefghij'.split('').map((name) => ({ name, category: 'success' }));
     await start([attempt({ id: '1', outcome: 'c' }), attempt({ id: '2', outcome: 'e' })], outcomes);
-    $('openModalBtn').click();
+    $('newAttemptBtn').click();
     expect(texts('#outcomeChips .chip')).toEqual(['e', 'c', 'a', 'b', 'd', 'f', 'g', 'h']);
     const chips = [...$('outcomeChips').children] as HTMLElement[];
     expect(chips[0].className).toBe('chip success current');
@@ -370,7 +380,7 @@ describe('new attempt sheet', () => {
 
   it('shows no outcome chips on a fresh install (empty registry)', async () => {
     await start(undefined, null);
-    $('openModalBtn').click();
+    $('newAttemptBtn').click();
     expect($('outcomeChips').children).toHaveLength(0);
   });
 });
@@ -378,7 +388,7 @@ describe('new attempt sheet', () => {
 describe('logging attempts', () => {
   it('logs a new attempt when an outcome chip is clicked', async () => {
     await start([attempt({ activity: 'kilter', angle: '40' })]);
-    $('openModalBtn').click();
+    $('newAttemptBtn').click();
     type('field-grade', 'v5');
     clickChip('outcomeChips', 'flash');
     const all = stored();
@@ -393,13 +403,13 @@ describe('logging attempts', () => {
       angle: '40',
     });
     expect(all[1].id).not.toBe('a1');
-    expect($('modalOverlay').classList.contains('active')).toBe(false);
+    expect($('attemptSheet').classList.contains('active')).toBe(false);
     expect(document.querySelectorAll('.attempt-card')).toHaveLength(2);
   });
 
   it('cleans typed text but keeps its case', async () => {
     await start([attempt({ location: 'BW Ost', grade: 'V4' })]);
-    $('openModalBtn').click();
+    $('newAttemptBtn').click();
     type('locationInput', '  bw   ost ');
     type('field-grade', 'v4');
     clickChip('outcomeChips', 'flash');
@@ -408,7 +418,7 @@ describe('logging attempts', () => {
 
   it('requires every field: empty ones show a red "add …" hint and the outcome chips fade', async () => {
     await start([attempt({ activity: 'kilter', angle: '40' })]);
-    $('openModalBtn').click();
+    $('newAttemptBtn').click();
     const blocked = () => $('outcomeChips').classList.contains('blocked');
     expect(blocked()).toBe(false);
     expect($<HTMLInputElement>('field-angle').placeholder).toBe('add angle');
@@ -423,7 +433,7 @@ describe('logging attempts', () => {
     clickChip('outcomeChips', 'flash');
     expect(stored()).toHaveLength(1);
     expect(alertMock).not.toHaveBeenCalled();
-    expect($('modalOverlay').classList.contains('active')).toBe(true);
+    expect($('attemptSheet').classList.contains('active')).toBe(true);
 
     // filling the field (here from a chip) makes the outcome chips active again
     clickChip('chips-angle', '40');
@@ -434,7 +444,7 @@ describe('logging attempts', () => {
 
   it('new-outcome chips are inactive too, and register nothing while a field is empty', async () => {
     await start([attempt()]);
-    $('openModalBtn').click();
+    $('newAttemptBtn').click();
     type('field-grade', '');
     type('outcomeInput', 'new one');
     expect($('newOutcomeChips').classList.contains('blocked')).toBe(true);
@@ -446,7 +456,7 @@ describe('logging attempts', () => {
   it('opens the context section when the location is empty', async () => {
     // fresh install: nothing to prefill
     await start(undefined, null);
-    $('openModalBtn').click();
+    $('newAttemptBtn').click();
     expect($('contextBody').classList.contains('hidden')).toBe(false);
     expect($('outcomeChips').classList.contains('blocked')).toBe(true);
     // switching activity with no previous attempt keeps it open while the location is empty
@@ -456,7 +466,7 @@ describe('logging attempts', () => {
 
   it('keeps the context section open while the location is empty', async () => {
     await start([attempt({ loggedAt: '2026-11-15T11:30:00Z' })]); // same session: starts collapsed
-    $('openModalBtn').click();
+    $('newAttemptBtn').click();
     const open = () => !$('contextBody').classList.contains('hidden');
     expect(open()).toBe(false);
     $('contextHeader').click();
@@ -474,7 +484,7 @@ describe('typing an outcome', () => {
 
   it('starts empty and shows recent outcomes, the previous one highlighted', async () => {
     await start([attempt({ outcome: 'fell' })]);
-    $('openModalBtn').click();
+    $('newAttemptBtn').click();
     expect($<HTMLInputElement>('outcomeInput').value).toBe('');
     expect(texts('#outcomeChips .chip')).toEqual(['fell', 'flash', 'learning']);
     expect(q('#outcomeChips .chip').classList.contains('current')).toBe(true);
@@ -482,7 +492,7 @@ describe('typing an outcome', () => {
 
   it('hides the outcome row while typed text matches no outcome', async () => {
     await start([attempt()]);
-    $('openModalBtn').click();
+    $('newAttemptBtn').click();
     const shown = (id: string) => getComputedStyle($(id)).display !== 'none';
     expect(shown('outcomeChips')).toBe(true);
     type('outcomeInput', 'zzz');
@@ -493,7 +503,7 @@ describe('typing an outcome', () => {
 
   it('shows only matching outcomes while typing, no backfill', async () => {
     await start([attempt()]);
-    $('openModalBtn').click();
+    $('newAttemptBtn').click();
     type('outcomeInput', 'le');
     expect(texts('#outcomeChips .chip')).toEqual(['learning']);
     type('outcomeInput', ' FLASH ');
@@ -507,7 +517,7 @@ describe('typing an outcome', () => {
 
   it('offers one chip per category for a new name, in a row of its own below', async () => {
     await start([attempt()]);
-    $('openModalBtn').click();
+    $('newAttemptBtn').click();
     const newRowVisible = () => getComputedStyle($('newOutcomeChips')).display !== 'none';
     expect(newRowVisible()).toBe(false);
     type('outcomeInput', 'fl');
@@ -530,21 +540,21 @@ describe('typing an outcome', () => {
 
   it('a new-outcome chip registers the outcome (normalised) and logs the attempt', async () => {
     await start([attempt()]);
-    $('openModalBtn').click();
+    $('newAttemptBtn').click();
     type('outcomeInput', '  Fell At Crux ');
     newChips()[1].click();
     expect(storedOutcomes()).toContainEqual({ name: 'fell at crux', category: 'failure' });
     expect(stored()[1]).toMatchObject({ outcome: 'fell at crux', location: 'BW Ost' });
-    expect($('modalOverlay').classList.contains('active')).toBe(false);
-    expect(q('.attempt-status-badge').className).toContain('attempt-status-red');
+    expect($('attemptSheet').classList.contains('active')).toBe(false);
+    expect(q('.attempt-status-badge').className).toContain('attempt-status-failure');
   });
 
   it('clears the typed text when the sheet opens again', async () => {
     await start([attempt()]);
-    $('openModalBtn').click();
+    $('newAttemptBtn').click();
     type('outcomeInput', 'xyz');
-    $('closeModalBtn').click();
-    $('openModalBtn').click();
+    $('closeAttemptSheetBtn').click();
+    $('newAttemptBtn').click();
     expect($<HTMLInputElement>('outcomeInput').value).toBe('');
     expect(newChips()).toHaveLength(0);
   });
@@ -553,8 +563,8 @@ describe('typing an outcome', () => {
 describe('layout', () => {
   it('opens sheets from the top; chip rows are one line that scrolls sideways', async () => {
     await start([attempt()]);
-    $('openModalBtn').click();
-    expect(getComputedStyle($('modalOverlay')).alignItems).toBe('flex-start');
+    $('newAttemptBtn').click();
+    expect(getComputedStyle($('attemptSheet')).alignItems).toBe('flex-start');
     for (const id of ['locationChips', 'chips-grade', 'outcomeChips']) {
       const row = getComputedStyle($(id));
       expect([id, row.flexWrap, row.overflowX]).toEqual([id, 'nowrap', 'auto']);
@@ -580,14 +590,14 @@ describe('layout', () => {
     expect(current.outlineOffset).toBe('-2px');
     expect(getComputedStyle(q('#outcomeChips .chip.current')).outlineOffset).toBe('-2px');
     // every sheet opens from the top, the backup menu too
-    expect(getComputedStyle($('menuModalOverlay')).alignItems).toBe('flex-start');
+    expect(getComputedStyle($('menuSheet')).alignItems).toBe('flex-start');
   });
 });
 
 describe('keyboard', () => {
   it('"Done" closes the keyboard in every input, without saving', async () => {
     await start([attempt({ activity: 'kilter', angle: '40' })]);
-    $('openModalBtn').click();
+    $('newAttemptBtn').click();
     for (const id of ['locationInput', 'field-angle', 'field-grade', 'outcomeInput']) {
       const input = $<HTMLInputElement>(id);
       expect(input.enterKeyHint).toBe('done');
@@ -597,7 +607,7 @@ describe('keyboard', () => {
       expect(document.activeElement).not.toBe(input);
     }
     expect(stored()).toHaveLength(1);
-    expect($('modalOverlay').classList.contains('active')).toBe(true);
+    expect($('attemptSheet').classList.contains('active')).toBe(true);
   });
 });
 
@@ -607,12 +617,16 @@ describe('editing and deleting', () => {
     attempt({ id: 'a2', loggedAt: '2026-11-14T13:00:00Z', grade: 'v4' }),
   ];
 
-  const edit = (id: string) => q(`[data-attempt-id="${id}"] .edit-btn`).click();
+  /** Expands every group (collapsed ones build no cards), then taps the attempt's Edit. */
+  const edit = (id: string) => {
+    expandAll();
+    q(`[data-attempt-id="${id}"] .edit-btn`).click();
+  };
 
   it('opens the attempt for editing', async () => {
     await start(data());
     edit('a1');
-    expect($('modalTitle').textContent).toBe('Edit Attempt');
+    expect($('attemptSheetTitle').textContent).toBe('Edit Attempt');
     expect($('deleteBtn').style.display).toBe('block');
     expect($<HTMLInputElement>('field-grade').value).toBe('v3');
     expect($<HTMLInputElement>('field-angle').value).toBe('40');
@@ -651,7 +665,7 @@ describe('editing and deleting', () => {
 
   it('keeps a defined field the activity does not list, without showing it', async () => {
     await start([attempt({ id: 'b', angle: '30' })]); // boulder doesn't list angle
-    expect(texts('.grade-badge')).toEqual(['v4']);
+    expect(texts('.field-badge')).toEqual(['v4']);
     edit('b');
     expect(document.getElementById('field-angle')).toBeNull();
     clickChip('outcomeChips', 'fell');
@@ -676,14 +690,14 @@ describe('editing and deleting', () => {
     $('deleteBtn').click();
     expect(confirmMock).not.toHaveBeenCalled();
     expect(stored().map((a) => a.id)).toEqual(['a1']);
-    expect($('modalOverlay').classList.contains('active')).toBe(false);
+    expect($('attemptSheet').classList.contains('active')).toBe(false);
   });
 
   it('resets the delete button when the sheet closes', async () => {
     await start(data());
     edit('a2');
     $('deleteBtn').click();
-    $('closeModalBtn').click();
+    $('closeAttemptSheetBtn').click();
     edit('a2');
     expect($('deleteBtn').textContent).toBe('Delete');
     $('deleteBtn').click();
@@ -693,8 +707,8 @@ describe('editing and deleting', () => {
   it('a new attempt after cancelling an edit is added, not an edit', async () => {
     await start(data());
     edit('a1');
-    $('closeModalBtn').click();
-    $('openModalBtn').click();
+    $('closeAttemptSheetBtn').click();
+    $('newAttemptBtn').click();
     clickChip('outcomeChips', 'flash');
     expect(stored()).toHaveLength(3);
   });
@@ -713,12 +727,12 @@ describe('backup menu', () => {
   it('opens and closes', async () => {
     await start([attempt()]);
     $('openMenuBtn').click();
-    expect($('menuModalOverlay').classList.contains('active')).toBe(true);
-    $('closeMenuModalBtn').click();
-    expect($('menuModalOverlay').classList.contains('active')).toBe(false);
+    expect($('menuSheet').classList.contains('active')).toBe(true);
+    $('closeMenuSheetBtn').click();
+    expect($('menuSheet').classList.contains('active')).toBe(false);
     $('openMenuBtn').click();
-    $('menuModalOverlay').click();
-    expect($('menuModalOverlay').classList.contains('active')).toBe(false);
+    $('menuSheet').click();
+    expect($('menuSheet').classList.contains('active')).toBe(false);
   });
 
   describe('export', () => {
@@ -746,7 +760,7 @@ describe('backup menu', () => {
       $('exportJsonBtn').click();
       expect(alertMock).toHaveBeenCalledWith('No attempts to export.');
       expect(blob).toBeUndefined();
-      expect($('menuModalOverlay').classList.contains('active')).toBe(true);
+      expect($('menuSheet').classList.contains('active')).toBe(true);
     });
 
     it('downloads a clog 0.1.0 backup and closes the menu', async () => {
@@ -772,7 +786,7 @@ describe('backup menu', () => {
         outcomes: [outcomes[1], outcomes[0]],
         attempts: [attempt({ outcome: 'zz' }), kilter],
       });
-      expect($('menuModalOverlay').classList.contains('active')).toBe(false);
+      expect($('menuSheet').classList.contains('active')).toBe(false);
     });
   });
 
@@ -811,8 +825,8 @@ describe('backup menu', () => {
       expect(stored().map((a) => a.id)).toEqual(['b1', 'b2']);
       expect(storedOutcomes()).toEqual(backup.outcomes);
       expect(document.querySelectorAll('.attempt-card')).toHaveLength(2);
-      expect(q('.attempt-status-badge').className).toContain('attempt-status-green');
-      expect($('menuModalOverlay').classList.contains('active')).toBe(false);
+      expect(q('.attempt-status-badge').className).toContain('attempt-status-success');
+      expect($('menuSheet').classList.contains('active')).toBe(false);
       for (const key of LEGACY_KEYS) expect(localStorage.getItem(key)).toBeNull();
     });
 
@@ -896,7 +910,7 @@ describe('saved data that cannot be used', () => {
     expect(inProblemMode()).toBe(true);
     expect(problemsShown()).toBe('attempt #1 (id a1…): unknown activity "kilterboard"');
     // the app is not running: its buttons do nothing, no attempt sheet opens
-    $('openModalBtn').click();
+    $('newAttemptBtn').click();
     expect(document.querySelector('.modal-overlay.active')).toBeNull();
     expect(document.querySelectorAll('.attempt-card')).toHaveLength(0);
   });
@@ -926,7 +940,7 @@ describe('saved data that cannot be used', () => {
     await start(undefined, null, { clog: '{oops' });
     expect(visible('problemScreen')).toBe(true);
     expect(visible('mainContent')).toBe(false);
-    expect(visible('openModalBtn')).toBe(false);
+    expect(visible('newAttemptBtn')).toBe(false);
     $('startFreshBtn').click();
     $('startFreshBtn').click();
     expect(visible('problemScreen')).toBe(false);
@@ -969,7 +983,7 @@ describe('saved data that cannot be used', () => {
     expect($('historyList').textContent).toContain('No attempts logged yet.');
 
     // logging works again
-    $('openModalBtn').click();
+    $('newAttemptBtn').click();
     type('locationInput', 'Gym');
     type('field-grade', '6a');
     type('outcomeInput', 'flash');

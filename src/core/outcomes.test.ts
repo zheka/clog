@@ -8,12 +8,12 @@ const outcomes: Outcome[] = [
 ];
 
 describe('getCategory', () => {
-  it('looks up by name, ignoring case and surrounding spaces', () => {
-    expect(getCategory(outcomes, ' FLASH ')).toBe('success');
+  it('looks up by (normalised) name', () => {
+    expect(getCategory(outcomes, 'flash')).toBe('success');
     expect(getCategory(outcomes, 'learning')).toBe('work');
   });
-  it('treats unregistered outcomes as failures', () => {
-    expect(getCategory(outcomes, 'mystery')).toBe('failure');
+  it('falls back to the neutral category (only a safety net: data is validated)', () => {
+    expect(getCategory(outcomes, 'mystery')).toBe('work');
   });
 });
 

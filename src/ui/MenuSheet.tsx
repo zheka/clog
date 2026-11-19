@@ -76,7 +76,7 @@ export function createMenuSheet(store: Store, updates: Updates) {
 
     return (
       <div
-        id="menuModalOverlay"
+        id="menuSheet"
         class={open.value ? 'modal-overlay active' : 'modal-overlay'}
         onClick={(e) => {
           if (e.target === e.currentTarget) close();
@@ -85,7 +85,7 @@ export function createMenuSheet(store: Store, updates: Updates) {
         <div class="modal-sheet">
           <div class="modal-header">
             <span class="modal-title">Data & Backup</span>
-            <button id="closeMenuModalBtn" class="close-btn" onClick={close}>
+            <button id="closeMenuSheetBtn" class="close-btn" onClick={close}>
               &times;
             </button>
           </div>

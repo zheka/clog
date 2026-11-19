@@ -70,10 +70,10 @@ describe('store', () => {
     expect(store.getState().attempts).toEqual([b]);
   });
 
-  it('adds an outcome once, ignoring case, without touching attempts', () => {
+  it('adds an outcome once, without touching attempts', () => {
     const { store, listener } = setup({ outcomes: [{ name: 'flash', category: 'success' }] });
     const attemptsBefore = store.getState().attempts;
-    store.addOutcome({ name: 'FLASH', category: 'failure' });
+    store.addOutcome({ name: 'flash', category: 'failure' });
     expect(listener).not.toHaveBeenCalled();
     store.addOutcome({ name: 'fell', category: 'failure' });
     expect(store.getState().outcomes.map((o) => o.name)).toEqual(['flash', 'fell']);

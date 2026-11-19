@@ -4,15 +4,9 @@ import { useState } from 'preact/hooks';
 import { findActivity } from '../config';
 import { getCategory } from '../core/outcomes';
 import { groupIntoSessions, type Session } from '../core/sessions';
-import type { Attempt, Category, Outcome } from '../core/types';
+import type { Attempt, Outcome } from '../core/types';
 import type { State, Store } from '../store';
 import { Chevron } from './Chevron';
-
-const BADGE_CLASS: Record<Category, string> = {
-  success: 'attempt-status-green',
-  failure: 'attempt-status-red',
-  work: 'attempt-status-gray',
-};
 
 /**
  * The list of attempts, grouped into sessions. Expanded/collapsed groups reset (only the newest
@@ -91,11 +85,14 @@ function SessionGroup({ session, outcomes, initiallyCollapsed, onEdit }: GroupPr
         </div>
         <Chevron />
       </div>
-      <div class="group-body">
-        {session.attempts.map((attempt) => (
-          <AttemptCard key={attempt.id} attempt={attempt} outcomes={outcomes} onEdit={onEdit} />
-        ))}
-      </div>
+      {/* A collapsed group builds no cards: with a long history most groups are collapsed. */}
+      {!collapsed && (
+        <div class="group-body">
+          {session.attempts.map((attempt) => (
+            <AttemptCard key={attempt.id} attempt={attempt} outcomes={outcomes} onEdit={onEdit} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -120,12 +117,12 @@ function AttemptCard({ attempt, outcomes, onEdit }: CardProps) {
         <div class="attempt-left">
           <span class="attempt-time">{time}</span>
           {fields.map((field) => (
-            <span key={field} class="grade-badge">
+            <span key={field} class="field-badge">
               {attempt[field]}
             </span>
           ))}
           <span
-            class={`attempt-status-badge ${BADGE_CLASS[getCategory(outcomes, attempt.outcome)]}`}
+            class={`attempt-status-badge attempt-status-${getCategory(outcomes, attempt.outcome)}`}
           >
             {attempt.outcome}
           </span>
