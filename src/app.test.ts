@@ -404,7 +404,9 @@ describe('logging attempts', () => {
     });
     expect(all[1].id).not.toBe('a1');
     expect($('attemptSheet').classList.contains('active')).toBe(false);
-    expect(document.querySelectorAll('.attempt-card')).toHaveLength(2);
+    // today's new session is expanded; yesterday's is collapsed (no cards built)
+    expect(document.querySelectorAll('.group-container')).toHaveLength(2);
+    expect(document.querySelectorAll('.attempt-card')).toHaveLength(1);
   });
 
   it('cleans typed text but keeps its case', async () => {

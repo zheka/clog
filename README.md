@@ -26,7 +26,7 @@ npm run icons      # regenerate the app icons in public/ from public/icon.svg
 index.html            page head and the #app mount point
 src/
   main.tsx            startup: load data, create the store and views, render the App
-  store.ts            app state + the only functions that change it; subscribe() for updates
+  store.ts            app state (a signal) + the only functions that change it
   config.ts           what the app offers: activities and their fields (edit here)
   core/               pure logic, no DOM or storage
     types.ts            Attempt, Outcome, Kind, Category
@@ -41,7 +41,12 @@ src/
   ui/                 Preact components
     App.tsx             the page: header, problem screen, history, + button, sheets
     HistoryView.tsx     the attempt list, grouped into sessions
-    AttemptSheet.tsx    new/edit attempt sheet
+    attemptForm.ts      the attempt form's state (signals) and actions, no markup
+    AttemptSheet.tsx    new/edit attempt sheet (context, activity fields, outcome, delete)
+    TextField.tsx       a required text field with its chip row
+    OutcomeField.tsx    outcome input, outcome chips and new-outcome chips
+    ChipRow.tsx         one-line chip row that scrolls sideways, with edge fades
+    DoneInput.tsx       text input whose keyboard key is "Done"
     MenuSheet.tsx       backup menu and app version
     ProblemScreen.tsx   shown instead of the app when saved data can't be used
     TwoTapButton.tsx    two-tap confirmation inside a button
@@ -53,7 +58,7 @@ src/
 
 See docs/design.md for the data model and decisions.
 
-Data flows one way: UI event → store action → new state → saved → subscribed views re-render.
+Data flows one way: UI event → store action → new state → saved → views that read it update.
 
 ## Installing on a phone
 

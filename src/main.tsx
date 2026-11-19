@@ -5,7 +5,8 @@ import { clearData, loadData, saveData } from './data/storage';
 import { requestPersistentStorage, setupUpdates } from './pwa';
 import { createStore } from './store';
 import { App, type Views } from './ui/App';
-import { createAttemptSheet } from './ui/AttemptSheet';
+import { createAttemptForm } from './ui/attemptForm';
+import { AttemptSheet } from './ui/AttemptSheet';
 import { createHistoryView } from './ui/HistoryView';
 import { createMenuSheet } from './ui/MenuSheet';
 import { showProblemScreen } from './ui/ProblemScreen';
@@ -18,14 +19,14 @@ const views = signal<Views | null>(null);
 
 function startApp(data: { attempts: Attempt[]; outcomes: Outcome[] }) {
   const store = createStore(data, (state) => saveData(state.attempts, state.outcomes));
-  const attempt = createAttemptSheet(store);
+  const form = createAttemptForm(store);
   const menu = createMenuSheet(store, updates);
   views.value = {
-    HistoryView: createHistoryView(store, attempt.openEdit),
+    HistoryView: createHistoryView(store, form.openEdit),
     MenuSheet: menu.MenuSheet,
-    AttemptSheet: attempt.AttemptSheet,
+    AttemptSheet: () => <AttemptSheet form={form} store={store} />,
     openMenu: menu.open,
-    openNewAttempt: attempt.openNew,
+    openNewAttempt: form.openNew,
   };
 }
 

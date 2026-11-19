@@ -1,4 +1,4 @@
-import { signal, type Signal } from '@preact/signals';
+import { signal, type ReadonlySignal, type Signal } from '@preact/signals';
 import { Fragment } from 'preact';
 import { useState } from 'preact/hooks';
 import { findActivity } from '../config';
@@ -13,24 +13,22 @@ import { Chevron } from './Chevron';
  * open) whenever attempts change; outcome-only changes keep them as they are.
  */
 export function createHistoryView(store: Store, onEdit: (id: string) => void) {
-  const state = signal(store.getState());
   // Bumped when attempts change: re-keys the list, which resets the groups' expanded state.
   const attemptsVersion = signal(0);
   store.subscribe((next, prev) => {
     if (next.attempts !== prev.attempts) attemptsVersion.value++;
-    state.value = next;
   });
   return function HistoryView() {
     return (
       <div id="historyList" class="history-list">
-        <HistoryList state={state} version={attemptsVersion} onEdit={onEdit} />
+        <HistoryList state={store.state} version={attemptsVersion} onEdit={onEdit} />
       </div>
     );
   };
 }
 
 interface ListProps {
-  state: Signal<State>;
+  state: ReadonlySignal<State>;
   version: Signal<number>;
   onEdit: (id: string) => void;
 }

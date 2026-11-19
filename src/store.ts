@@ -1,3 +1,4 @@
+import { signal, type ReadonlySignal } from '@preact/signals';
 import { createAttempt, withChanges, type AttemptInput } from './core/attempt';
 import type { Attempt, Outcome } from './core/types';
 
@@ -12,9 +13,11 @@ export type Listener = (state: State, prev: State) => void;
 /**
  * App state plus the only functions that change it. Every change replaces the state
  * (arrays are never mutated, so `state.attempts !== prev.attempts` means attempts changed),
- * saves it, then notifies subscribers.
+ * saves it, then publishes it: views read `state` (a signal), others can `subscribe`.
  */
 export interface Store {
+  /** The current state; components that read it update when it changes. */
+  readonly state: ReadonlySignal<State>;
   getState(): State;
   /** Calls `listener` after every change. Returns a function that unsubscribes. */
   subscribe(listener: Listener): () => void;
@@ -28,18 +31,20 @@ export interface Store {
 }
 
 export function createStore(initial: State, save: (state: State) => void): Store {
-  let state = initial;
+  const current = signal(initial);
   const listeners = new Set<Listener>();
 
   function setState(next: State) {
-    const prev = state;
-    state = next;
-    save(state);
-    listeners.forEach((listener) => listener(state, prev));
+    const prev = current.peek();
+    // Save first: if saving fails, nothing changes on screen.
+    save(next);
+    current.value = next;
+    listeners.forEach((listener) => listener(next, prev));
   }
 
   return {
-    getState: () => state,
+    state: current,
+    getState: () => current.peek(),
 
     subscribe(listener) {
       listeners.add(listener);
@@ -48,11 +53,13 @@ export function createStore(initial: State, save: (state: State) => void): Store
 
     addAttempt(input) {
       const attempt = createAttempt(input);
+      const state = current.peek();
       setState({ ...state, attempts: [...state.attempts, attempt] });
       return attempt;
     },
 
     updateAttempt(id, input) {
+      const state = current.peek();
       setState({
         ...state,
         attempts: state.attempts.map((a) => (a.id === id ? withChanges(a, input) : a)),
@@ -60,16 +67,18 @@ export function createStore(initial: State, save: (state: State) => void): Store
     },
 
     deleteAttempt(id) {
+      const state = current.peek();
       setState({ ...state, attempts: state.attempts.filter((a) => a.id !== id) });
     },
 
     addOutcome(outcome) {
+      const state = current.peek();
       if (state.outcomes.some((o) => o.name === outcome.name)) return;
       setState({ ...state, outcomes: [...state.outcomes, outcome] });
     },
 
     replaceAll(attempts, outcomes) {
-      setState({ attempts, outcomes: outcomes ?? state.outcomes });
+      setState({ attempts, outcomes: outcomes ?? current.peek().outcomes });
     },
   };
 }

@@ -57,21 +57,17 @@ export function createMenuSheet(store: Store, updates: Updates) {
       alert(`Successfully imported ${backup.attempts.length} attempts.`);
     }
 
-    function onFileChosen() {
+    async function onFileChosen() {
       const input = fileInput.current!;
       const file = input.files?.[0];
       if (!file) return;
-      const reader = new FileReader();
-      reader.onload = () => {
-        try {
-          importBackup(reader.result as string);
-        } catch (err) {
-          alert('Failed to import JSON file: ' + (err as Error).message);
-        } finally {
-          input.value = ''; // allow choosing the same file again
-        }
-      };
-      reader.readAsText(file);
+      try {
+        importBackup(await file.text());
+      } catch (err) {
+        alert('Failed to import JSON file: ' + (err as Error).message);
+      } finally {
+        input.value = ''; // allow choosing the same file again
+      }
     }
 
     return (
