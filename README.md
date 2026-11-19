@@ -12,7 +12,8 @@ Requires Node 26 (see `.nvmrc`).
 ```bash
 npm install
 npm run dev        # dev server at http://localhost:5190/clog/
-npm test           # unit tests (Vitest)
+npm test           # unit and UI tests (Vitest, jsdom)
+npm run test:e2e   # end-to-end tests: the production build in Chromium (Playwright)
 npm run lint       # ESLint
 npm run typecheck  # TypeScript
 npm run build      # type-check + production build into dist/
@@ -54,6 +55,7 @@ src/
   style.css
   ui/*.test.ts        UI tests per screen: the whole app in jsdom (helpers in ui/test-app.ts)
   **/*.test.ts        unit tests next to the code they test
+e2e/                  end-to-end tests (Playwright) and a made-up backup fixture
 ```
 
 See [docs/design.md](docs/design.md) for how the app works and
@@ -79,5 +81,6 @@ Drop the overrides once the tools depend on fixed versions themselves.
 
 ## Deployment
 
-GitHub Actions (`.github/workflows/deploy.yml`) lints, tests and builds every PR,
+GitHub Actions (`.github/workflows/deploy.yml`) lints, tests, builds and runs the end-to-end
+tests on every PR,
 and deploys `dist/` to GitHub Pages on every push to `main`.

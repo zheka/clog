@@ -29,6 +29,9 @@ jobs:
       - run: npm run lint
       - run: npm test
       - run: npm run build
+      # End-to-end tests on the build just made, in real Chromium (see playwright.config.ts).
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test
       - if: github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@v5
         with:

@@ -10,5 +10,11 @@
     "strict": true,
     "allowJs": true
   },
-  "include": ["vite.config.ts", "pwa-assets.config.ts", "eslint.config.js"]
+  "include": [
+    "vite.config.ts",
+    "pwa-assets.config.ts",
+    "playwright.config.ts",
+    "eslint.config.js",
+    "e2e"
+  ]
 }

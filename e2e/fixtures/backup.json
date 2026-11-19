@@ -1,0 +1,148 @@
+{
+  "version": "clog 0.1.0",
+  "exportedAt": "2026-11-03T12:00:00.000Z",
+  "outcomes": [
+    {
+      "name": "fell",
+      "category": "failure"
+    },
+    {
+      "name": "flash",
+      "category": "success"
+    },
+    {
+      "name": "grip out",
+      "category": "failure"
+    },
+    {
+      "name": "hand off moving",
+      "category": "failure"
+    },
+    {
+      "name": "missed move",
+      "category": "failure"
+    },
+    {
+      "name": "send",
+      "category": "success"
+    },
+    {
+      "name": "swung off",
+      "category": "failure"
+    },
+    {
+      "name": "working",
+      "category": "work"
+    }
+  ],
+  "attempts": [
+    {
+      "id": "6513270e-269e-0d37-f2a7-4de452e6b438",
+      "loggedAt": "2026-11-01T10:00:00.000Z",
+      "activity": "boulder",
+      "location": "Demo Gym",
+      "grade": "5",
+      "outcome": "flash"
+    },
+    {
+      "id": "d23f0824-128b-2f33-0c5c-7fd0a6a3a450",
+      "loggedAt": "2026-11-01T10:05:00.000Z",
+      "activity": "boulder",
+      "location": "Demo Gym",
+      "grade": "6",
+      "outcome": "send"
+    },
+    {
+      "id": "9531985d-5d9d-c9f8-1818-e811892f902b",
+      "loggedAt": "2026-11-01T10:10:00.000Z",
+      "activity": "boulder",
+      "location": "Demo Gym",
+      "grade": "6",
+      "outcome": "fell"
+    },
+    {
+      "id": "36f675cc-81e7-4ef5-e8e2-5d940ed90475",
+      "loggedAt": "2026-11-01T10:15:00.000Z",
+      "activity": "boulder",
+      "location": "Demo Gym",
+      "grade": "7",
+      "outcome": "missed move"
+    },
+    {
+      "id": "6b0d549b-6f03-675a-1600-a35a099950d8",
+      "loggedAt": "2026-11-01T10:20:00.000Z",
+      "activity": "boulder",
+      "location": "Demo Gym",
+      "grade": "7",
+      "outcome": "swung off"
+    },
+    {
+      "id": "8d116ece-1738-f7d9-3d9c-172411e20b8f",
+      "loggedAt": "2026-11-01T10:25:00.000Z",
+      "activity": "boulder",
+      "location": "Demo Gym",
+      "grade": "6",
+      "outcome": "flash"
+    },
+    {
+      "id": "90c192cf-d3ac-94af-0f21-ddb66cad4a26",
+      "loggedAt": "2026-11-02T18:00:00.000Z",
+      "activity": "kilter",
+      "location": "Home Wall",
+      "angle": "40",
+      "grade": "v4",
+      "outcome": "flash"
+    },
+    {
+      "id": "a170b338-3926-3059-f28c-105d1fb17c23",
+      "loggedAt": "2026-11-02T18:05:00.000Z",
+      "activity": "kilter",
+      "location": "Home Wall",
+      "angle": "40",
+      "grade": "v5",
+      "outcome": "fell"
+    },
+    {
+      "id": "0fd630f1-f29d-0da9-953f-48f1a09f76b5",
+      "loggedAt": "2026-11-02T18:10:00.000Z",
+      "activity": "kilter",
+      "location": "Home Wall",
+      "angle": "45",
+      "grade": "v5",
+      "outcome": "grip out"
+    },
+    {
+      "id": "0cb1e29c-658c-da14-95e6-0af593bd04cf",
+      "loggedAt": "2026-11-02T18:15:00.000Z",
+      "activity": "kilter",
+      "location": "Home Wall",
+      "angle": "45",
+      "grade": "v4",
+      "outcome": "send"
+    },
+    {
+      "id": "8e81973e-0bec-d7b0-3898-d190f9ebdacc",
+      "loggedAt": "2026-11-03T09:00:00.000Z",
+      "activity": "route",
+      "location": "Crag Hall",
+      "grade": "6+",
+      "outcome": "send"
+    },
+    {
+      "id": "6b4cb242-4a23-d596-2217-beaddbc496cb",
+      "loggedAt": "2026-11-03T09:05:00.000Z",
+      "activity": "route",
+      "location": "Crag Hall",
+      "grade": "7-",
+      "outcome": "hand off moving"
+    },
+    {
+      "id": "92276658-1e27-a1c0-8a6a-63ec24ede6a4",
+      "loggedAt": "2026-11-03T09:10:00.000Z",
+      "activity": "route",
+      "location": "Crag Hall",
+      "grade": "7-",
+      "outcome": "working"
+    }
+  ]
+}
