@@ -84,9 +84,9 @@ function SessionGroup({ session, outcomes, initiallyCollapsed, onEdit }: GroupPr
           <span>
             <span class="group-date">{session.dateString}</span>
             {' • '}
-            {session.location}
-            {' • '}
             {session.activity}
+            {' • '}
+            {session.location}
           </span>
         </div>
         <Chevron />

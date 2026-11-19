@@ -428,8 +428,9 @@ Rules for every chip row:
 
 - Groups **consecutive** attempts by **activity + location + local date**. There is no explicit
   session concept: boulders and the board on the same day appear as two groups.
-- The group header shows the date, location and activity (`Nov 15 • TK • route`) in the normal
-  text colour, with no icon before it and no line under it, and the same outline chevron as the
+- The group header shows the date, activity and location (`Nov 15 • route • TK`) in the normal
+  text colour and in the same order as the form (activity, then location), with names shown
+  exactly as stored (no forced capitals), with no icon before it and no line under it, and the same outline chevron as the
   attempt form's context bar. Cards show the time, **each field the
   activity lists as a badge** in config order, and the outcome badge in its category colour.
   No tags; fields the activity doesn't list are not shown. Decorations such as a `°` suffix

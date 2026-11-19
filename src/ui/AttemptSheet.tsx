@@ -299,7 +299,7 @@ export function createAttemptSheet(store: Store) {
                 }}
               >
                 <span id="contextSummaryText" class="context-summary">
-                  {`${location} • ${activity.value}`}
+                  {`${activity.value} • ${location}`}
                 </span>
                 <Chevron />
               </div>

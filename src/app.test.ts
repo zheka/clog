@@ -129,9 +129,9 @@ describe('loading and history list', () => {
     const day = (iso: string) =>
       new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
     expect(q('.group-header', groups[0]).textContent).toContain(
-      `${day('2026-11-15T12:00:00Z')} • A • boulder`,
+      `${day('2026-11-15T12:00:00Z')} • boulder • A`,
     );
-    expect(q('.group-header', groups[1]).textContent).toContain('B • route');
+    expect(q('.group-header', groups[1]).textContent).toContain('route • B');
     // expanding is instant and has no height limit (a long session is shown in full)
     const body = (g: Element) => getComputedStyle(q('.group-body', g));
     expect([body(groups[0]).display, body(groups[1]).display]).toEqual(['flex', 'none']);
@@ -141,6 +141,8 @@ describe('loading and history list', () => {
     expect(getComputedStyle($('historyList')).rowGap).toBe('8px');
     expect(getComputedStyle(groups[0]).borderTopStyle).toBe('solid');
     expect(getComputedStyle(q('.attempt-card', groups[2])).borderTopStyle).toMatch(/^(none|)$/);
+    // names shown exactly as stored: no forced capitals (activities lowercase, locations as typed)
+    expect(getComputedStyle(q('.group-header', groups[0])).textTransform).toMatch(/^(none|)$/);
     // header: starts with the date (no icon before it), in the normal text colour
     expect(q('.group-header-left', groups[0]).querySelector('svg')).toBeNull();
     expect(getComputedStyle(q('.group-header', groups[0])).color).toBe(
@@ -221,7 +223,7 @@ describe('new attempt sheet', () => {
     expect(q('.activity-tab.active').getAttribute('data-activity')).toBe('kilter');
     expect($('contextBody').classList.contains('hidden')).toBe(true);
     expect($('contextHeader').getAttribute('aria-expanded')).toBe('false');
-    expect($('contextSummaryText').textContent).toBe('BW Ost • kilter');
+    expect($('contextSummaryText').textContent).toBe('kilter • BW Ost');
   });
 
   it('expands context when the last attempt is older than 4 hours, or with no history', async () => {
@@ -238,13 +240,14 @@ describe('new attempt sheet', () => {
     $('openModalBtn').click();
     expect($('contextBody').classList.contains('hidden')).toBe(false);
     expect($<HTMLInputElement>('locationInput').value).toBe('');
-    expect($('contextSummaryText').textContent).toBe('Unknown Location • boulder');
+    expect($('contextSummaryText').textContent).toBe('boulder • Unknown Location');
   });
 
   it('shows one tab per configured activity, and the fields of the selected activity', async () => {
     await start([attempt()]);
     $('openModalBtn').click();
     expect(texts('.activity-tab')).toEqual(['boulder', 'route', 'kilter']);
+    expect(getComputedStyle(q('.activity-tab')).textTransform).toMatch(/^(none|)$/);
     expect(q('.activity-tab.active').dataset.activity).toBe('boulder');
     expect(texts('#activityFields label')).toEqual(['grade']);
     q('.activity-tab[data-activity="kilter"]').click();
@@ -258,9 +261,9 @@ describe('new attempt sheet', () => {
     expect($('contextBody').classList.contains('hidden')).toBe(false);
     expect($('contextHeader').getAttribute('aria-expanded')).toBe('true');
     type('locationInput', 'New Gym');
-    expect($('contextSummaryText').textContent).toBe('New Gym • boulder');
+    expect($('contextSummaryText').textContent).toBe('boulder • New Gym');
     q('[data-activity="route"]', $('contextBody')).click();
-    expect($('contextSummaryText').textContent).toBe('New Gym • route');
+    expect($('contextSummaryText').textContent).toBe('route • New Gym');
   });
 
   it('closes via the close button and the overlay without saving', async () => {
@@ -305,7 +308,7 @@ describe('new attempt sheet', () => {
     ]);
     clickChip('locationChips', 'Gym1');
     expect($<HTMLInputElement>('locationInput').value).toBe('Gym1');
-    expect($('contextSummaryText').textContent).toBe('Gym1 • boulder');
+    expect($('contextSummaryText').textContent).toBe('boulder • Gym1');
   });
 
   it('suggests grades: this gym first, then the same activity elsewhere, then any activity', async () => {

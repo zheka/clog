@@ -138,7 +138,6 @@ main {
   font-weight: 700;
   color: var(--text);
   padding: 12px 0;
-  text-transform: capitalize;
   cursor: pointer;
   user-select: none;
 }
@@ -464,7 +463,6 @@ input[type='number']:focus {
 }
 
 .activity-tab {
-  text-transform: capitalize;
   background: transparent;
   border: none;
   color: var(--text-muted);
