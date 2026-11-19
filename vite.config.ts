@@ -18,6 +18,10 @@ function appVersion(): string {
 export default defineConfig({
   // Served from https://zheka.github.io/clog/
   base: '/clog/',
+  // Own fixed ports (sibling projects use Vite's defaults 5173/4173). Fail instead of quietly
+  // moving to another port: browsers keep saved data and service workers per port.
+  server: { port: 5190, strictPort: true },
+  preview: { port: 4190, strictPort: true },
   define: {
     __APP_VERSION__: JSON.stringify(appVersion()),
   },

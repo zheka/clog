@@ -11,12 +11,12 @@ Requires Node 26 (see `.nvmrc`).
 
 ```bash
 npm install
-npm run dev        # dev server at http://localhost:5173/clog/
+npm run dev        # dev server at http://localhost:5190/clog/
 npm test           # unit tests (Vitest)
 npm run lint       # ESLint
 npm run typecheck  # TypeScript
 npm run build      # type-check + production build into dist/
-npm run preview    # serve dist/ locally (the only way to try offline mode and updates)
+npm run preview    # serve dist/ at http://localhost:4190/clog/ (try offline mode and updates)
 npm run icons      # regenerate the app icons in public/ from public/icon.svg
 ```
 
