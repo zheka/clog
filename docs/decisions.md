@@ -143,3 +143,9 @@ discussed and not adopted for now.
 - **Empty backups import** (a valid file with only outcomes).
 - Switching to an activity with no previous attempt highlights no outcome (editing keeps the
   attempt's own).
+
+## 2026-11-20 · Goat icon
+
+The gym-holds icon became a cartoon goat balancing on two small ledges of a steep rock face (white
+goat, slate rock, amber sky), after a photo of ibex on a dam wall. Flat colours and one thick
+outline keep goat and rock readable down to 32px; the scene fits Android's round safe zone.
