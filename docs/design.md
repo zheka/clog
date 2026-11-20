@@ -310,3 +310,7 @@ imported.
 - Long headers and card values wrap; shortening them with "…" was postponed.
 - Editing an attempt's time, if it can be made unobtrusive.
 - A `style` field for routes (autobelay, lead, top rope…), on hold.
+- Possible UI update: tapping a history card opens the editor, replacing the small **Edit**
+  button (the card becomes a button with a pressed state). A bigger target for fixing mistakes
+  and less clutter; low risk, since opening by accident changes nothing. Not urgent: do it with
+  the next UI round, or if the Edit button feels fiddly in the gym.
