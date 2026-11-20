@@ -31,6 +31,9 @@ export default defineConfig({
       // right away from the menu (src/pwa.ts). Never reloads by itself mid-entry.
       registerType: 'prompt',
       injectRegister: false,
+      // App icons are generated from public/icon.svg on every build (see pwa-assets.config.ts),
+      // and added to the manifest and the page's <head> along with the theme colour.
+      pwaAssets: { config: true, overrideManifestIcons: true },
       manifest: {
         name: 'CLog',
         short_name: 'CLog',
@@ -38,17 +41,6 @@ export default defineConfig({
         display: 'standalone',
         background_color: '#121214',
         theme_color: '#1e1e24',
-        icons: [
-          { src: 'pwa-64x64.png', sizes: '64x64', type: 'image/png' },
-          { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' },
-          { src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png' },
-          {
-            src: 'maskable-icon-512x512.png',
-            sizes: '512x512',
-            type: 'image/png',
-            purpose: 'maskable',
-          },
-        ],
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,ico}'],

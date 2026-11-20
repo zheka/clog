@@ -149,3 +149,7 @@ discussed and not adopted for now.
 The gym-holds icon became a cartoon goat balancing on two small ledges of a steep rock face (white
 goat, slate rock, amber sky), after a photo of ibex on a dam wall. Flat colours and one thick
 outline keep goat and rock readable down to 32px; the scene fits Android's round safe zone.
+
+The PNG and ICO sizes are no longer committed: vite-plugin-pwa generates them from
+`public/icon.svg` on every build (and in dev), and adds them to the manifest and the page head. A
+browser test checks that every listed icon loads.

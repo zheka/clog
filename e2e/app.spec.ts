@@ -72,6 +72,29 @@ test('layout on a phone: sheet at the top, one-line chip rows that scroll', asyn
   expect(chip!.width).toBeGreaterThanOrEqual(64);
 });
 
+test('every app icon in the manifest and the page head loads', async ({ page, request }) => {
+  // The icons are generated from public/icon.svg during the build (vite.config.ts).
+  await page.goto('');
+  const manifestHref = await page.locator('link[rel="manifest"]').getAttribute('href');
+  const manifestUrl = new URL(manifestHref!, page.url());
+  const manifest = await (await request.get(manifestUrl.href)).json();
+  const icons: { src: string; sizes: string; purpose?: string }[] = manifest.icons;
+  expect(icons.map((i) => `${i.sizes} ${i.purpose ?? 'any'}`)).toEqual(
+    expect.arrayContaining(['192x192 any', '512x512 any', '512x512 maskable']),
+  );
+  const urls = icons.map((i) => new URL(i.src, manifestUrl).href);
+  for (const link of await page.locator('link[rel="icon"], link[rel="apple-touch-icon"]').all()) {
+    urls.push(new URL((await link.getAttribute('href'))!, page.url()).href);
+  }
+  expect(urls.length).toBeGreaterThanOrEqual(7);
+  for (const url of urls) {
+    const response = await request.get(url);
+    expect(response.ok(), url).toBe(true);
+    expect(response.headers()['content-type'], url).toMatch(/^image\//);
+    expect((await response.body()).length, url).toBeGreaterThan(300);
+  }
+});
+
 test('works offline after the first visit', async ({ page, context }) => {
   await page.goto('');
   await page.evaluate(async () => {

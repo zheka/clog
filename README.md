@@ -18,7 +18,6 @@ npm run lint       # ESLint
 npm run typecheck  # TypeScript
 npm run build      # type-check + production build into dist/
 npm run preview    # serve dist/ at http://localhost:4190/clog/ (try offline mode and updates)
-npm run icons      # regenerate the app icons in public/ from public/icon.svg
 ```
 
 ## Layout

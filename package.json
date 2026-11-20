@@ -16,7 +16,6 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "icons": "pwa-assets-generator",
     "test:e2e": "npm run build && playwright test"
   },
   "devDependencies": {
